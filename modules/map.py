@@ -7,10 +7,10 @@ class Map:
 
     def __init__(self, name, bgcolor = (0, 0, 0), height = 16, width = 30):
         self.name = name
-        self.layers = [self.init_layer(), self.init_layer(), self.init_layer(), self.init_layer()]
-        self.bgcolor = bgcolor
         self.height = height
         self.width = width
+        self.bgcolor = bgcolor
+        self.layers = [self.init_layer(), self.init_layer(), self.init_layer(), self.init_layer()]
 
     def save_map(self, path = None):
         if path == None:
@@ -79,6 +79,7 @@ class Map:
 
     def init_layer(self):
         # 30x16
-        line = [0] * self.width
-        layer = line * self.height
+        layer = []
+        for i in range(self.height):
+            layer.append([0] * self.width)
         return layer

@@ -91,7 +91,7 @@ def main():
     try:
         map = Map.load_map()
     except FileNotFoundError:
-        map = Map("map00")
+        map = Map(config["start_map"])
 
     layer = 1
 
