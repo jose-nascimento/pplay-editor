@@ -120,6 +120,7 @@ def main():
                     # num_file = len(os.listdir())
                     # map_name = f"map{num_file}.png"
                     # pygame.image.save(screen, map_name)
+                    # map.save_map()
                     map.save_map()
                     # os.startfile(map_name)
                 

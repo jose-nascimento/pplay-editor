@@ -1,22 +1,67 @@
 import pickle
+import json
 import os
 from modules import config as conf
 config = conf.config["current"]
 
 class Map:
 
-    def __init__(self, name, bgcolor = (0, 0, 0), height = 16, width = 30):
+    def __init__(
+            self,
+            name,
+            layers = None,
+            tileset = config["default_tileset"],
+            bgcolor = (0, 0, 0),
+            height = 16,
+            width = 30,
+            **kwargs
+        ):
         self.name = name
         self.height = height
         self.width = width
         self.bgcolor = bgcolor
-        self.layers = [self.init_layer(), self.init_layer(), self.init_layer(), self.init_layer()]
+        self.tileset = tileset
+        self.layers = layers if layers else [self.init_layer(), self.init_layer(), self.init_layer(), self.init_layer()]
 
-    def save_map(self, path = None):
-        if path == None:
-            path = os.path.join("projects", config["active_project"])
-        with open(os.path.join(path, "maps", f"{self.name}.pkl"), "wb") as file:
-            pickle.dump(self, file)
+    def save_map(self, project = None):
+        if project == None:
+            project = config["active_project"]
+        filename = f"{self.name}.json"
+        path = os.path.join("projects", project, "maps", self.name, filename)
+        with open(path, "w") as json_file:
+            json.dump(
+                {
+                    "name": self.name,
+                    "tileset": self.tileset,
+                    "size": {
+                        "width": self.width,
+                        "height": self.height
+                    },
+                    "background": {
+                        "background_color": self.bgcolor
+                    },
+                    "layers": self.layers
+                },
+                json_file
+            )
+
+    @classmethod
+    def load_map(cls, name = None, project = None):
+        if name == None: name = config["start_map"]
+        if project == None: project = config["active_project"]
+        filename = f"{name}.json"
+        path = os.path.join("projects", project, "maps", name)
+        if filename in os.listdir(path):
+            with open(os.path.join(path, filename), "rb") as json_file:
+                data = json.load(json_file)
+            return cls(
+                    bgcolor = data["background"]["background_color"],
+                    width = data["size"]["width"],
+                    height = data["size"]["height"],
+                    **data,
+                )
+        else:
+            raise FileNotFoundError
 
     def clear_layer(self, index):
         layer = index - 1
@@ -43,6 +88,7 @@ class Map:
             #         line[x] = tile
     
     def flood_fill(self, tile, point, layer):
+        # usa o algoritmo "scanline fill"
         mp = self.layers[layer - 1]
         stack = [point]
         ymax = len(mp) - 1
@@ -61,21 +107,6 @@ class Map:
     def get_tile(self, pos, z):
         x, y = pos
         return self.layers[z - 1][y][x]
-
-    @staticmethod
-    def load_map(name = None, project = None):
-        if name == None: name = config["start_map"]
-        if project == None: project = config["active_project"]
-        path = os.path.join("projects", project, "maps")
-        filename = f"{name}.pkl"
-        if filename in os.listdir(path):
-            with open(os.path.join(path, filename), "rb") as file:
-                mp = pickle.load(file)
-                mp.height = 16
-                mp.width = 30
-            return mp
-        else:
-            raise FileNotFoundError
 
     def init_layer(self):
         # 30x16
