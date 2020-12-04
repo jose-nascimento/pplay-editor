@@ -5,14 +5,16 @@ config = conf.config["current"]
 
 class Map:
 
-    def __init__(self, name, bgcolor = (0, 0, 0)):
+    def __init__(self, name, bgcolor = (0, 0, 0), height = 16, width = 30):
         self.name = name
-        self.layers = [Map.init_layer(), Map.init_layer(), Map.init_layer(), Map.init_layer()]
+        self.layers = [self.init_layer(), self.init_layer(), self.init_layer(), self.init_layer()]
         self.bgcolor = bgcolor
+        self.height = height
+        self.width = width
 
     def save_map(self, path = None):
         if path == None:
-            path = config["active_project"]
+            path = os.path.join("projects", config["active_project"])
         with open(os.path.join(path, "maps", f"{self.name}.pkl"), "wb") as file:
             pickle.dump(self, file)
 
@@ -69,28 +71,14 @@ class Map:
         if filename in os.listdir(path):
             with open(os.path.join(path, filename), "rb") as file:
                 mp = pickle.load(file)
+                mp.height = 16
+                mp.width = 30
             return mp
         else:
             raise FileNotFoundError
 
-    @staticmethod
-    def init_layer():
+    def init_layer(self):
         # 30x16
-        return [
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        ]
+        line = [0] * self.width
+        layer = line * self.height
+        return layer
