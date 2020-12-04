@@ -52,7 +52,7 @@ class Map:
         filename = f"{name}.json"
         path = os.path.join("projects", project, "maps", name)
         if filename in os.listdir(path):
-            with open(os.path.join(path, filename), "rb") as json_file:
+            with open(os.path.join(path, filename), "r") as json_file:
                 data = json.load(json_file)
             return cls(
                     bgcolor = data["background"]["background_color"],
