@@ -49,9 +49,9 @@ def tiles_onscroll(selected_tile, direction, size):
     return selected_tile
 
 def label_text(layer, mode):
-    layer_label = ["1", "2", "3", "4"]
-    layer_label[layer - 1] = f"[{layer}]"
-    mode_label = ["L", "- Lápis |", "A", "- Área |", "B", "- Balde de Tinta"]
+    layer_label = ["1", "2", "3", "4", "Movimento (M)"]
+    layer_label[layer - 1] = f"[{layer_label[layer - 1]}]"
+    mode_label = ["L", "- Lápis |", "A", "- Área |", "B", "- Balde de Tinta |"]
     mode_label[(mode - 1) * 2] = f"[{mode_label[(mode - 1) * 2]}]"
     return f"Camada: {' '.join(layer_label)} | Esconder/Mostrar - H | Somente atual - T | {' '.join(mode_label)}"
 
@@ -105,7 +105,7 @@ def main():
     while loop:
         menu_label.set(label_text(layer, mode))
         screen.fill((128, 128, 128))
-        canvas.draw_map(map, show_layers, tileset)
+        canvas.draw_map(map, show_layers, tileset, layer)
         tileset.blit(selected_tile, mode)
         set_cursor(canvas, mode)
         
@@ -141,6 +141,8 @@ def main():
                     mode = 2
                 if event.key == K_b:
                     mode = 3
+                if event.key == K_m:
+                    layer = 5
 
                 # =================== Mostra posição do mouse ===================
                 if event.key == K_y:
@@ -156,7 +158,10 @@ def main():
                 button = event.button
                 if button == BUTTON_LEFT:
                     if mode == 1:
-                        map.place_tile(selected_tile, canvas.get_xy(), layer) # Insere tile
+                        if layer == 5:
+                            map.place_tile(1, canvas.get_xy(), 5)
+                        else:
+                            map.place_tile(selected_tile, canvas.get_xy(), layer) # Insere tile
                     elif mode == 2:
                         if mouse_right_pressed:
                             mouse_right_pressed = False
@@ -169,7 +174,11 @@ def main():
                             drag_type = 1
                             drag_start = canvas.get_xy()
                     elif mode == 3:
-                        map.flood_fill(selected_tile, canvas.get_xy(), layer)
+                        if layer == 5:
+                            map.flood_fill(1, canvas.get_xy(), layer)
+                        else:
+                            map.flood_fill(selected_tile, canvas.get_xy(), layer)
+                        
                 elif button == BUTTON_RIGHT:
                     if mode == 1:
                         map.place_tile(0, canvas.get_xy(), layer) # Remove tile
@@ -222,7 +231,10 @@ def main():
             canvas.display.blit(drag_surface, drag_pos)
 
         if drag_start and drag_end:
-            fill_tile = selected_tile if drag_type == 1 else 0
+            if layer == 5:
+                fill_tile = 1 if drag_type == 1 else 0
+            else:
+                fill_tile = selected_tile if drag_type == 1 else 0
             map.fill_area(
                 fill_tile, 
                 drag_start,

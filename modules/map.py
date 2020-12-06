@@ -1,4 +1,3 @@
-import pickle
 import json
 import os
 from modules import config as conf
@@ -94,6 +93,7 @@ class Map:
         ymax = len(mp) - 1
         xmax = len(mp[0]) - 1
         target_tile = mp[point[1]][point[0]]
+        if target_tile == tile: return
 
         while(len(stack)):
             x, y = stack.pop()

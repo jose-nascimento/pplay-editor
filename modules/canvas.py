@@ -48,8 +48,17 @@ class Canvas:
             for x, c in enumerate(line):
                 if c != 0:
                     self.display.blit(tileset[c], (x * 16, y * 16))
+
+    def blit_movement(self, map: Map):
+
+        for y, line in enumerate(map.layers[4]):
+            for x, c in enumerate(line):
+                if c == 0:
+                    pygame.draw.circle(self.display, (255, 255, 255), (x * 16 + 8, y * 16 + 8), 6, width = 1)
+                elif c == 1:
+                    pygame.draw.line(self.display, (255, 255, 255), (x * 16 + 3,  y * 16 + 8), (x * 16 + 12,  y * 16 + 8), width = 2)
     
-    def draw_map(self, map: Map, show_layers: int, tileset: Tileset):
+    def draw_map(self, map: Map, show_layers: int, tileset: Tileset, layer: int = 1):
         self.display.fill(map.bgcolor)
 
         if show_layers & 0b0001:
@@ -60,3 +69,5 @@ class Canvas:
             self.blit_tiles(map, 3, tileset)
         if show_layers & 0b1000:
             self.blit_tiles(map, 4, tileset)
+        if layer == 5:
+            self.blit_movement(map)
