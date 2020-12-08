@@ -1,5 +1,5 @@
-from .map import Map
 from .tileset import Tileset
+from .map import Map
 from .canvas import Canvas
 from . import config
 

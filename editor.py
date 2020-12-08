@@ -1,8 +1,6 @@
 from pygame.locals import *
 import pygame
-import os
 from glob import glob
-import pickle
 from time import time
 from tkinter import filedialog
 from modules import Map, Tileset, Canvas, config as conf
@@ -30,15 +28,26 @@ def init_display():
 
     pygame.init()
     sizer_xy = pygame.cursors.compile(pygame.cursors.sizer_xy_strings)
-
-    width, height = 30, 16
     canvas_position = (cx, cy) = (50, 20)
-    canvas = Canvas(width, height, canvas_position)
-    canvas_size = (cw, ch) = canvas.onscreen_size
-    window_size = (cw + cx, ch + cy)
+    canvas_size = (1440, 768)
+    canvas_tile_size = 48
+
+    # Carrega o mapa
+    map = None
+    try:
+        map = Map.load_map()
+    except FileNotFoundError:
+        map = Map(config["start_map"])
+    tileset = Tileset.load_tiles((1, 20), name = map.tileset, canvas_tile_size = canvas_tile_size)
+    tile_size = tileset.tile_size
+
+    canvas = Canvas(canvas_position, canvas_size, canvas_tile_size, tile_size)
+    canvas_size = (cw, ch) = canvas.screen_size
+
+    window_size = (cw + cx, ch + cy) # 1490, 788 -> 1440, 768 + (50, 20) -> 30x48, 16x48
     screen = pygame.display.set_mode(window_size, 0, 32)
     screen.fill((128, 128, 128))
-    return canvas, screen, canvas_size, window_size
+    return canvas, screen, map, tileset, window_size
 
 def tiles_onscroll(selected_tile, direction, size):
     selected_tile += direction
@@ -48,9 +57,12 @@ def tiles_onscroll(selected_tile, direction, size):
         selected_tile = 0
     return selected_tile
 
-def label_text(layer, mode):
+def label_text(layer, mode, movement_layer = False):
     layer_label = ["1", "2", "3", "4", "Movimento (M)"]
-    layer_label[layer - 1] = f"[{layer_label[layer - 1]}]"
+    if movement_layer:
+        layer_label[-1] = f"[{layer_label[-1]}]"
+    else:
+        layer_label[layer - 1] = f"[{layer_label[layer - 1]}]"
     mode_label = ["L", "- Lápis |", "A", "- Área |", "B", "- Balde de Tinta |"]
     mode_label[(mode - 1) * 2] = f"[{mode_label[(mode - 1) * 2]}]"
     return f"Camada: {' '.join(layer_label)} | Esconder/Mostrar - H | Somente atual - T | {' '.join(mode_label)}"
@@ -73,8 +85,8 @@ def set_cursor(canvas: Canvas, mode: int):
 
 def main():
     pygame.init()
-    canvas, screen, canvas_size, window_size = init_display()
-    tileset = Tileset.load_tiles((1, 20))
+    canvas, screen, map, tileset, window_size = init_display()
+    d = tileset.tile_size # delta
     clock = pygame.time.Clock()
     pos = x, y = pygame.mouse.get_pos()
     selected_tile = 0
@@ -86,14 +98,8 @@ def main():
     drag_end = None
     drag_type = 0 # 1 left | -1 right
 
-    # Carrega o mapa
-    map = None
-    try:
-        map = Map.load_map()
-    except FileNotFoundError:
-        map = Map(config["start_map"])
-
     layer = 1
+    movement_layer = False
 
     # Usado para esconder/mostrar camadas
     show_layers = 0b1111
@@ -103,9 +109,9 @@ def main():
 
     loop = True
     while loop:
-        menu_label.set(label_text(layer, mode))
+        menu_label.set(label_text(layer, mode, movement_layer))
         screen.fill((128, 128, 128))
-        canvas.draw_map(map, show_layers, tileset, layer)
+        canvas.draw_map(map, show_layers, tileset, layer, movement_layer)
         tileset.blit(selected_tile, mode)
         set_cursor(canvas, mode)
         
@@ -120,7 +126,7 @@ def main():
                     # num_file = len(os.listdir())
                     # map_name = f"map{num_file}.png"
                     # pygame.image.save(screen, map_name)
-                    # map.save_map()
+                    map.export()
                     map.save_map()
                     # os.startfile(map_name)
                 
@@ -142,7 +148,7 @@ def main():
                 if event.key == K_b:
                     mode = 3
                 if event.key == K_m:
-                    layer = 5
+                    movement_layer = not movement_layer
 
                 # =================== Mostra posição do mouse ===================
                 if event.key == K_y:
@@ -158,8 +164,8 @@ def main():
                 button = event.button
                 if button == BUTTON_LEFT:
                     if mode == 1:
-                        if layer == 5:
-                            map.place_tile(1, canvas.get_xy(), 5)
+                        if movement_layer:
+                            map.place_tile(1, canvas.get_xy(), layer, movement_layer = True)
                         else:
                             map.place_tile(selected_tile, canvas.get_xy(), layer) # Insere tile
                     elif mode == 2:
@@ -174,14 +180,14 @@ def main():
                             drag_type = 1
                             drag_start = canvas.get_xy()
                     elif mode == 3:
-                        if layer == 5:
-                            map.flood_fill(1, canvas.get_xy(), layer)
+                        if movement_layer:
+                            map.flood_fill(1, canvas.get_xy(), layer, movement_layer = True)
                         else:
                             map.flood_fill(selected_tile, canvas.get_xy(), layer)
                         
                 elif button == BUTTON_RIGHT:
                     if mode == 1:
-                        map.place_tile(0, canvas.get_xy(), layer) # Remove tile
+                        map.place_tile(0, canvas.get_xy(), layer, movement_layer = movement_layer) # Remove tile
                     elif mode == 2:
                         if mouse_left_pressed:
                             mouse_left_pressed = False
@@ -194,7 +200,7 @@ def main():
                             drag_type = -1
                             drag_start = canvas.get_xy()
                     elif mode == 3:
-                        map.flood_fill(0, canvas.get_xy(), layer)
+                        map.flood_fill(0, canvas.get_xy(), layer, movement_layer = movement_layer)
 
             elif event.type == pygame.MOUSEBUTTONUP:
                 if mode == 2:
@@ -221,8 +227,8 @@ def main():
             if py > my:
                 py, my = my, py
             dx, dy = (abs(px - mx) + 1, abs(py - my))
-            drag_pos = (px * 16, py * 16)
-            drag_len = (dx * 16, dy * 16)
+            drag_pos = (px * d, py * d)
+            drag_len = (dx * d, dy * d)
             drag_rect = (*drag_pos, *drag_len)
             pygame.draw.rect(canvas.display, (24, 144, 255), drag_rect, width = 1)
             drag_surface = pygame.Surface(drag_len)
@@ -231,7 +237,7 @@ def main():
             canvas.display.blit(drag_surface, drag_pos)
 
         if drag_start and drag_end:
-            if layer == 5:
+            if movement_layer:
                 fill_tile = 1 if drag_type == 1 else 0
             else:
                 fill_tile = selected_tile if drag_type == 1 else 0
@@ -239,7 +245,8 @@ def main():
                 fill_tile, 
                 drag_start,
                 drag_end,
-                layer
+                layer,
+                movement_layer = movement_layer,
             )
             drag_start, drag_end = None, None
             drag_type = 0
