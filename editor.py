@@ -1,6 +1,5 @@
 from pygame.locals import *
 import pygame
-from glob import glob
 from time import time
 from tkinter import filedialog
 from modules import Map, Tileset, Canvas, config as conf
@@ -69,7 +68,7 @@ def label_text(layer, mode, movement_layer = False):
 
 def set_cursor(canvas: Canvas, mode: int):
     global sizer_xy
-    pos = x, y = pygame.mouse.get_pos()
+    pos = pygame.mouse.get_pos()
     if canvas.get_rect().collidepoint(pos):
         if mode == 1:
             pygame.mouse.set_cursor(*pygame.cursors.tri_left)
