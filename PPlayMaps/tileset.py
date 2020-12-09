@@ -1,0 +1,48 @@
+import os
+import json
+from PIL import Image
+import pygame
+from glob import glob
+from PPlayMaps import config as conf
+config = conf.config
+active = config["active"]
+
+class Tileset:
+
+    def __init__(self, name, tiles, tile_size = 16):
+        self.name = name
+        self.tile_size = tile_size
+        self.tiles = tiles
+        # self.tiles = [pygame.image.fromstring(i.tobytes(), i.size, i.mode) for i in tiles]
+
+    def __getitem__(self, key):
+        return self.tiles[key - 1]
+
+    def __setitem__(self, key, value):
+        self.tiles[key - 1] = value
+
+    def __len__(self):
+        return len(self.tiles)
+
+    @classmethod
+    def load_from(cls, path, mode = "default"):
+        with open(os.path.join(path, "tileset.json"), "r") as file:
+            options = json.load(file)
+        name = options["name"]
+        tile_size = options["tile_size"]
+        tile_list = sorted([x for x in glob(os.path.join(path, "*.png"))])
+        if mode == "export":
+            tiles = [Image.open(x).convert("RGBA") for x in tile_list]
+        else:
+            tiles = [pygame.image.load(x) for x in tile_list]
+        tileset = cls(name, tiles, tile_size = tile_size)
+        return tileset
+
+
+    @classmethod
+    def load(cls, name = None, project = None, mode = "default"):
+        if name == None:
+            name = active["default_tileset"]
+        path = config.default_folder(project)
+        path = os.path.join(path, "tilesets", name)
+        return cls.load_from(path, mode)

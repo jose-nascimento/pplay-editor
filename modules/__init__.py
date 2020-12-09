@@ -1,6 +1,4 @@
-from .tileset import Tileset
-from .map import Map
+from .tile_bar import TileBar
 from .canvas import Canvas
-from . import config
 
-__all__ = ['Map', 'Tileset', 'Canvas', 'config']
+__all__ = ['TileBar', 'Canvas']

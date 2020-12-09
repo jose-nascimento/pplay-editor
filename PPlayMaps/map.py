@@ -2,8 +2,9 @@ import json
 import os
 from PIL import Image
 import pygame
-from modules import Tileset, config as conf
-config = conf.config["current"]
+from PPlayMaps import Tileset, config as conf
+config = conf.config
+active = config["active"]
 
 class Map:
 
@@ -12,10 +13,11 @@ class Map:
             name,
             layers = None,
             movement = None,
-            tileset = config["default_tileset"],
+            tileset = active["default_tileset"],
             height = 16,
             width = 30,
             project = None,
+            path = None,
             background = {},
             bgimage = None,
             **kwargs
@@ -29,14 +31,12 @@ class Map:
         self.bgimage = bgimage
         self.tileset = tileset
         self.project = project
+        self.path = path
         self.movement = movement if movement else self.init_layer()
         self.layers = layers if layers else [self.init_layer(), self.init_layer(), self.init_layer()]
 
-    def save_map(self, project = None):
-        if project == None:
-            project = config["active_project"]
-        filename = f"{self.name}.json"
-        path = os.path.join("projects", project, "maps", self.name, filename)
+    def save_map(self):
+        path = os.path.join(self.path, "map.json")
         with open(path, "w") as json_file:
             json.dump(
                 {
@@ -54,11 +54,8 @@ class Map:
             )
 
     @classmethod
-    def load_map(cls, name = None, project = None):
-        if name == None: name = config["start_map"]
-        if project == None: project = config["active_project"]
-        filename = f"{name}.json"
-        path = os.path.join("projects", project, "maps", name)
+    def load_from(cls, path):
+        filename = "map.json"
         if filename in os.listdir(path):
             with open(os.path.join(path, filename), "r") as json_file:
                 data = json.load(json_file)
@@ -68,7 +65,7 @@ class Map:
             else:
                 bgimage = None
             return cls(
-                    project = project,
+                    path = path,
                     width = data["size"]["width"],
                     height = data["size"]["height"],
                     bgimage = bgimage,
@@ -77,28 +74,31 @@ class Map:
         else:
             raise FileNotFoundError
 
-    def get_path(self):
-        return os.path.join("projects", self.project, "maps", self.name)
+    @classmethod
+    def load(cls, name, project = None):
+        path = config.default_folder(project)
+        path = os.path.join(path, "maps", name)
+        return cls.load_from(path)
 
     @property
     def size(self):
         return (self.width, self.height)
     
-    def export(self):
-        project = self.project
+    def export(self, project = None):
         tileset_name = self.tileset
-        tileset = Tileset.load_tiles(project = project, name = tileset_name, mode = "image")
+        tileset = Tileset.load_tiles(name = tileset_name, project = project, mode = "export")
         delta = tileset.tile_size
         map_size = (self.width * delta, self.height * delta)
         canvas = Image.new("RGBA", map_size, self.bgcolor)
         if "image" in self.background:
-            bgimage = Image.open(os.path.join(self.get_path(), self.background["image"]))
+            bgimage = Image.open(os.path.join(self.path, self.background["image"]))
             canvas.paste(bgimage, (0, 0), bgimage)
         for layer in self.layers:
             for y, line in enumerate(layer):
                 for x, tile in enumerate(line):
-                    canvas.paste(tileset[tile], (x * delta, y * delta), tileset[tile])
-        canvas.save(os.path.join(self.get_path(), f"{self.name}.png"))
+                    if tile > 0:
+                        canvas.paste(tileset[tile], (x * delta, y * delta), tileset[tile])
+        canvas.save(os.path.join(self.path, f"{self.name}.png"))
 
     def clear_layer(self, index):
         layer = index - 1

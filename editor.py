@@ -1,9 +1,12 @@
+import os
 from pygame.locals import *
 import pygame
 from time import time
 from tkinter import filedialog
-from modules import Map, Tileset, Canvas, config as conf
-config = conf.config["current"]
+from PPlayMaps import Map, Tileset, config as conf, tileset
+from modules import Canvas, TileBar, tile_bar
+config = conf.config
+active = config["active"]
 
 class Label:
     def __init__(self, text, x, y):
@@ -19,6 +22,27 @@ class Label:
         self.surface2 = pygame.Surface(size)
         self.surface2.blit(self.surface, (0, 0))
 
+def init_assets(canvas: Canvas, project = None, map_name = None):
+    if project is not None:
+        active["active_project"] = project
+    project_path = config.default_folder(project)
+    config.read(os.path.join(project_path, "project.ini"))
+    if map_name == None:
+        map_name = active["start_map"]
+    else:
+        active["start_map"] = map_name
+
+    canvas_tile_size = canvas.screen_tile_size
+
+    map = Map.load(map_name)
+    tileset = Tileset.load(name = map.tileset)
+    tile_bar = TileBar(tileset, (1, 20), canvas_tile_size, 16)
+
+    canvas.set_map(map, tileset)
+
+    return map, tileset, tile_bar
+
+
 pygame.font.init()
 font = pygame.font.SysFont("Arial", 14)
 sizer_xy = None
@@ -27,26 +51,31 @@ def init_display():
 
     pygame.init()
     sizer_xy = pygame.cursors.compile(pygame.cursors.sizer_xy_strings)
-    canvas_position = (cx, cy) = (50, 20)
-    canvas_size = (1440, 768)
-    canvas_tile_size = 48
+    
+    screen_size = active["screen_size"]
+    screen_size = screen_size.split("x")
+    screen_size = (sw, sh) = (int(screen_size[0]), int(screen_size[1]))
 
-    # Carrega o mapa
-    map = None
-    try:
-        map = Map.load_map()
-    except FileNotFoundError:
-        map = Map(config["start_map"])
-    tileset = Tileset.load_tiles((1, 20), name = map.tileset, canvas_tile_size = canvas_tile_size)
-    tile_size = tileset.tile_size
+    # screen = pygame.display.set_mode(screen_size, pygame.RESIZABLE, 32) # 16x9 / 32x16
+    # info = pygame.display.Info()
+    # screen_size = (sw, sh) = info.current_w, info.current_h
+    
+    visible_map_size = (vw, vh) = (30, 15)
+    total_size = (tw, th)  = (vw + 2, vh + 1)
+    # tile_size = tx, ty = (sw // tw, sh // th)
+    tile_size = (tx, ty) = (48, 48)
+    margin = (mt, mr, mb, ml) = (20, 0, 0, tx + 2)
+    canvas_position = (cx, cy) = (ml, mt)
+    canvas_size = (cw, ch) = (vw * tx, vh * ty)
 
-    canvas = Canvas(canvas_position, canvas_size, canvas_tile_size, tile_size)
-    canvas_size = (cw, ch) = canvas.screen_size
+    canvas = Canvas(canvas_position, visible_map_size, canvas_size)
+    # cx, cy = canvas.position
+    # cw, ch = canvas.size
 
-    window_size = (cw + cx, ch + cy) # 1490, 788 -> 1440, 768 + (50, 20) -> 30x48, 16x48
-    screen = pygame.display.set_mode(window_size, 0, 32)
+    window_size = (tw * tx, th * ty) # 1490, 788 -> 1440, 768 + (50, 20) -> 30x48, 16x48
+    screen = pygame.display.set_mode(window_size, pygame.RESIZABLE, 32) # 16x9 / 32x16
     screen.fill((128, 128, 128))
-    return canvas, screen, map, tileset, window_size
+    return canvas, screen, window_size
 
 def tiles_onscroll(selected_tile, direction, size):
     selected_tile += direction
@@ -84,7 +113,8 @@ def set_cursor(canvas: Canvas, mode: int):
 
 def main():
     pygame.init()
-    canvas, screen, map, tileset, window_size = init_display()
+    canvas, screen, window_size = init_display()
+    map, tileset, tile_bar = init_assets(canvas)
     d = tileset.tile_size # delta
     clock = pygame.time.Clock()
     pos = x, y = pygame.mouse.get_pos()
@@ -99,19 +129,15 @@ def main():
 
     layer = 1
     movement_layer = False
-
-    # Usado para esconder/mostrar camadas
-    show_layers = 0b1111
-    toggle = False
-
     menu_label = Label(label_text(1, 1), 15, 0)
 
     loop = True
     while loop:
         menu_label.set(label_text(layer, mode, movement_layer))
         screen.fill((128, 128, 128))
-        canvas.draw_map(map, show_layers, tileset, layer, movement_layer)
-        tileset.blit(selected_tile, mode)
+        canvas.draw_map()
+        if movement_layer: canvas.blit_movement()
+        tile_bar.blit(selected_tile)
         set_cursor(canvas, mode)
         
         for event in pygame.event.get():
@@ -134,10 +160,9 @@ def main():
                 
                 # =================== TOGGLE =================== #
                 if event.key == K_h:
-                    show_layers ^= 1 << (layer - 1)
+                    canvas.set_layer_visibility(layer)
                 if event.key == K_t:
-                    show_layers = 0b1111 if toggle else 1 << (layer - 1)
-                    toggle = not toggle
+                    canvas.toggle_layer(layer)
 
                 # =================== Modo de preenchimento =================== #
                 if event.key == K_l:
@@ -250,9 +275,9 @@ def main():
             drag_start, drag_end = None, None
             drag_type = 0
 
-        # pointer_tile(canvas, selected_tile, tileset)
-        tileset.draw_self(screen)
-        screen.blit(menu_label.surface, (50, 3))
+        # canvas.pointer_tile(selected_tile)
+        tile_bar.draw_self(screen)
+        screen.blit(menu_label.surface, (50, 2))
         canvas.draw_self(screen)
         pygame.display.update()
         clock.tick(30)

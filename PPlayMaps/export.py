@@ -1,7 +1,7 @@
 import os
 from PIL import Image
-from modules import config as conf
-config = conf.config["current"]
+from PPlayMaps import config as conf
+config = conf.config["active"]
 
 def export(project = None):
     if project == None:
