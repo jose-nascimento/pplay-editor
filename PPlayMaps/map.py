@@ -1,8 +1,11 @@
+from typing import Optional
+from PPlayMaps.types import Vector
 import json
 import os
 from PIL import Image
 import pygame
 from PPlayMaps import Tileset, config as conf
+from .helpers import clamp
 config = conf.config
 active = config["active"]
 
@@ -75,7 +78,7 @@ class Map:
             raise FileNotFoundError
 
     @classmethod
-    def load(cls, name, project = None):
+    def load(cls, name: str, project: Optional[str] = None):
         path = config.default_folder(project)
         path = os.path.join(path, "maps", name)
         return cls.load_from(path)
@@ -84,9 +87,9 @@ class Map:
     def size(self):
         return (self.width, self.height)
     
-    def export(self, project = None):
+    def export(self, project: Optional[str] = None):
         tileset_name = self.tileset
-        tileset = Tileset.load_tiles(name = tileset_name, project = project, mode = "export")
+        tileset = Tileset.load(name = tileset_name, project = project, mode = "export")
         delta = tileset.tile_size
         map_size = (self.width * delta, self.height * delta)
         canvas = Image.new("RGBA", map_size, self.bgcolor)
@@ -100,21 +103,34 @@ class Map:
                         canvas.paste(tileset[tile], (x * delta, y * delta), tileset[tile])
         canvas.save(os.path.join(self.path, f"{self.name}.png"))
 
-    def clear_layer(self, index):
+    def clear_layer(self, index: int):
         layer = index - 1
         self.layers[layer] = Map.init_layer()
 
-    def place_tile(self, tile, pos, layer, movement_layer = False):
+    def place_tile(self, tile: int, pos: Vector, layer: int, movement_layer: bool = False):
         x, y = pos
+        if min(pos) < 0:
+            return
+        if (x >= self.width) or (y >= self.height):
+            return
         if movement_layer:
             self.movement[y][x] = tile
         else:
             self.layers[layer - 1][y][x] = tile
 
-    def fill_area(self, tile, start, end, layer, movement_layer = False):
+    def fill_area(
+        self,
+        tile: int,
+        start: Vector,
+        end: Vector,
+        layer: int,
+        movement_layer: bool = False
+    ):
         mp = self.movement if movement_layer else self.layers[layer - 1]
         x0, y0 = start
         x1, y1 = end
+        x0, x1 = clamp((x0, x1), (0, self.width))
+        y0, y1 = clamp((y0, y1), (0, self.height))
         if x0 > x1:
             x0, x1 = x1, x0
         if y0 > y1:
@@ -127,14 +143,19 @@ class Map:
             #     if x0 <= x < x1:
             #         line[x] = tile
     
-    def flood_fill(self, tile, point, layer, movement_layer = False):
+    def flood_fill(self, tile: int, point: Vector, layer: int, movement_layer: bool = False):
         # usa o algoritmo "scanline fill"
+        if min(point) < 0: return
         mp = self.movement if movement_layer else self.layers[layer - 1]
-        stack = [point]
-        ymax = len(mp) - 1
-        xmax = len(mp[0]) - 1
+        ymax = self.height - 1
+        xmax = self.width - 1
+        x, y = point
+        if (x > xmax) or (y > ymax):
+            return
         target_tile = mp[point[1]][point[0]]
-        if target_tile == tile: return
+        if target_tile == tile:
+            return
+        stack = [point]
 
         while(len(stack)):
             x, y = stack.pop()
@@ -145,8 +166,12 @@ class Map:
                 if y > 0: stack.append((x, y - 1))
                 if y < ymax: stack.append((x, y + 1))
     
-    def get_tile(self, pos, z):
+    def get_tile(self, pos: Vector, z: int):
         x, y = pos
+        if min(pos) < 0:
+            return
+        if (x >= self.width) or (y >= self.height):
+            return
         return self.layers[z - 1][y][x]
 
     def init_layer(self):

@@ -9,13 +9,15 @@ active = config["active"]
 
 class Tileset:
 
-    def __init__(self, name, tiles, tile_size = 16):
+    def __init__(self, name: str, tiles, tile_size = 16):
         self.name = name
         self.tile_size = tile_size
         self.tiles = tiles
         # self.tiles = [pygame.image.fromstring(i.tobytes(), i.size, i.mode) for i in tiles]
 
     def __getitem__(self, key):
+        if key == 0:
+            return None
         return self.tiles[key - 1]
 
     def __setitem__(self, key, value):
@@ -25,7 +27,7 @@ class Tileset:
         return len(self.tiles)
 
     @classmethod
-    def load_from(cls, path, mode = "default"):
+    def load_from(cls, path, mode: str = "default"):
         with open(os.path.join(path, "tileset.json"), "r") as file:
             options = json.load(file)
         name = options["name"]
@@ -40,7 +42,7 @@ class Tileset:
 
 
     @classmethod
-    def load(cls, name = None, project = None, mode = "default"):
+    def load(cls, name: str = None, project: str = None, mode: str = "default"):
         if name == None:
             name = active["default_tileset"]
         path = config.default_folder(project)
