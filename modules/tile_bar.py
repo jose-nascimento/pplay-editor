@@ -42,8 +42,8 @@ class TileBar:
 
         tile_size = tileset.tile_size
         self.tile_size = tile_size
-        self.size = size = len(tileset) + 1
-        self.max_scroll = max(0, size - length)
+        self.size = size = len(tileset)
+        self.max_scroll = max(0, size + 1 - length)
         self.curr_scroll = 0
 
         self.selected_tile = 0
@@ -65,8 +65,10 @@ class TileBar:
 
         if selected_tile < 0:
             selected_tile = size
+            self.scroll_to("max")
         elif selected_tile > size:
             selected_tile = 0
+            self.scroll_to(0)
         if d < 0 and scroll > 0 and (size - selected_tile) > half + r:
             # subindo, tile atual está < meia tela do fundo
             self.scroll(d)
@@ -144,6 +146,13 @@ class TileBar:
 
         self.curr_scroll = new_scroll
         return new_scroll
+
+    def scroll_to(self, scroll: Union[str, int]):
+        max_scroll = self.max_scroll
+        if scroll == "max":
+            self.curr_scroll = max_scroll
+            return
+        self.curr_scroll = min(max_scroll, max(0, scroll))
 
     def draw_arrow(self, direction: str) -> pygame.Surface:
         scroll = self.curr_scroll

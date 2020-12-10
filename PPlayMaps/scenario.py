@@ -1,4 +1,4 @@
-from typing import Tuple, Optional, Union
+from typing import Literal, Tuple, Optional, Union
 from pygame.locals import *
 import pygame
 from PPlayMaps import Map, Tileset, Vector
@@ -6,11 +6,13 @@ from .helpers import clamp_2, add_v
 
 class Scenario:
 
-    @staticmethod
     def calc_size(
+        self,
         size: Vector,
         screen_size: Vector,
         tile_size: Optional[Vector] = None,
+        position: Optional[Vector] = None,
+        *,
         limit_margin: bool = False
     ) -> Tuple[Vector, Vector, Vector]:
         sw, sh = screen_size
@@ -27,6 +29,19 @@ class Scenario:
         # screen_tile_size = (sw // width, sh // height)
         margin = ((sw - vw) // 2, (sh - vh) // 2)
 
+        if limit_margin is None:
+            limit_margin = self.limit_margin
+        else:
+            self.limit_margin = limit_margin
+
+        self.width = width
+        self.height = height
+        self.margin = margin
+        self.screen_tile_size = tile_size
+        self.display_size = display_size
+        self.screen_size = screen_size
+        if position is not None: self.position = position
+
         return display_size, margin, tile_size
 
     def __init__(
@@ -35,23 +50,16 @@ class Scenario:
         size: Vector,
         screen_size: Vector,
         tile_size: Optional[Vector] = None,
+        *,
         limit_margin: bool = False
     ) -> None:
-        display_size, margin, screen_tile_size = self.calc_size(
+        self.calc_size(
             size,
             screen_size,
             tile_size,
+            position,
             limit_margin = limit_margin
         )
-        width, height = size
-
-        self.width = width
-        self.height = height
-        self.margin = margin
-        self.screen_tile_size = screen_tile_size
-        self.position = position
-        self.display_size = display_size
-        self.screen_size = screen_size
 
         self.curr_scroll = Vector(0, 0)
         self.max_scroll = Vector(0, 0)
@@ -76,15 +84,7 @@ class Scenario:
 
         width, height = self.width, self.height
         size = (width, height)
-        display_size, margin, screen_tile_size = self.calc_size(size, screen_size, tile_size)
-
-        self.width = width
-        self.height = height
-        self.margin = margin
-        self.screen_tile_size = screen_tile_size
-        self.position = position
-        self.display_size = display_size
-        self.screen_size = screen_size
+        self.calc_size(size, screen_size, tile_size)
 
         if self.map_size is not None:
             self.calc_map_display()
@@ -174,8 +174,11 @@ class Scenario:
     def flood_fill(self, tile: int, point: Vector, layer: int, movement_layer: bool = False):
         self.map.flood_fill(tile, point, layer, movement_layer = movement_layer)
 
-    def get_tile(self, pos: Vector, layer: int):
-        self.map.get_tile(pos, layer)
+    def get_tile(self, pos: Vector, layer: int) -> int:
+        return self.map.get_tile(pos, layer)
+
+    def resize(self, value: Vector, *, op: Literal["=", "+", "-"] = "="):
+        return self.map.resize(value, op = op)
 
     # ---------- End map manipulation ----------
 
@@ -216,7 +219,7 @@ class Scenario:
         display_size = self.map_size or self.display_size
         self.screen.blit(pygame.transform.scale(self.display, display_size), self.margin)
         screen.blit(self.screen, self.position)
-    
+
     def get_xy(self) -> Vector:
         x, y = pygame.mouse.get_pos()
         sx, sy = self.screen_tile_size
@@ -224,6 +227,18 @@ class Scenario:
         mx, my = self.margin
         dx, dy = (px + mx, py + my)
         return Vector((x - dx) // sx, (y - dy) // sy)
+    
+    def get_map_xy(self) -> Vector:
+        x, y = pygame.mouse.get_pos()
+        sx, sy = self.screen_tile_size
+        px, py = self.position
+        mx, my = self.margin
+        dx, dy = (px + mx, py + my)
+        pos_x, pos_y =  (x - dx) // sx, (y - dy) // sy
+        if min(pos_x, pos_y) < 0:
+            return Vector(-1, -1)
+        scroll_x, scroll_y = self.curr_scroll
+        return Vector(pos_x + scroll_x, pos_y + scroll_y)
     
     def get_rect(self) -> pygame.Rect:
         cx, cy = self.position
@@ -240,8 +255,8 @@ class Scenario:
         tileset = self.tileset
         current = self.map.layers[layer - 1]
         d = self.map_tile_size
-        xmax, ymax = self.width, self.height
         xmin, ymin = self.curr_scroll
+        xmax, ymax = self.width + xmin, self.height + ymin
 
         for y, line in enumerate(current[ymin:ymax]):
             for x, c in enumerate(line[xmin:xmax]):

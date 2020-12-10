@@ -1,4 +1,4 @@
-import os
+import os, sys
 from typing import Tuple, Optional
 from pygame.locals import *
 import pygame
@@ -7,7 +7,16 @@ from modules import Canvas, TileBar
 config = conf.config
 active = config["active"]
 class Label:
-    def __init__(self, text, position: Vector, color: Color = (255, 255, 255)):
+    def __init__(
+        self,
+        text: str,
+        position: Vector,
+        font_family: str = "Arial",
+        font_size: int = 14,
+        color: Color = (255, 255, 255)
+    ):
+        self.font = font = pygame.font.SysFont(font_family, font_size)
+
         self.position = position
         self.color = color
 
@@ -22,7 +31,7 @@ class Label:
             color = self.color
         else:
             self.color = color
-        self.surface = font.render(text, 1, pygame.Color(color))
+        self.surface = self.font.render(text, 1, color)
     
     def blit(self, screen) -> None:
         screen.blit(self.surface, self.position)
@@ -97,8 +106,6 @@ def compute_dimensions() -> Tuple[Vector, Vector, Vector, Vector, Vector, Margin
         margin
     )
 
-pygame.font.init()
-font = pygame.font.SysFont("Arial", 14)
 sizer_xy = None
 def init_display() -> Tuple[Canvas, pygame.Surface, Vector, Vector, Margin]:
     global sizer_xy
@@ -190,6 +197,7 @@ def main():
     mouse_right_pressed = False
     drag_start = None
     drag_end = None
+    drag_position = None
     drag_type = 0 # 1 left | -1 right
 
     layer = 1
@@ -219,7 +227,7 @@ def main():
                     map.save_map()
                 
                 if event.key == K_c:
-                    selected_tile = canvas.get_tile(canvas.get_xy(), layer)
+                    selected_tile = canvas.get_tile(canvas.get_map_xy(), layer)
                     tile_bar.set_tile(selected_tile)
                 
                 # =================== TOGGLE =================== #
@@ -250,9 +258,7 @@ def main():
 
                 # =================== Mostra posição do mouse ===================
                 if event.key == K_y:
-                    x, y = pygame.mouse.get_pos()
-                    text = font.render(f"{x}, {y}", 1, (255, 69, 0))
-                    canvas.display.blit(text, (5, 5))
+                    print(f"Mouse pos: ({x}, {y})")
                     print(f"Screen size: {current_size}")
                     print(f"Screen tile: {screen_tile_size}")
 
@@ -267,52 +273,56 @@ def main():
                 elif button == BUTTON_LEFT:
                     if mode == 1:
                         if movement_layer:
-                            canvas.place_tile(1, canvas.get_xy(), layer, movement_layer = True)
+                            canvas.place_tile(1, canvas.get_map_xy(), layer, movement_layer = True)
                         else:
-                            canvas.place_tile(selected_tile, canvas.get_xy(), layer) # Insere tile
+                            canvas.place_tile(selected_tile, canvas.get_map_xy(), layer) # Insere tile
                     elif mode == 2:
                         if mouse_right_pressed:
                             mouse_right_pressed = False
                             drag_start = None
+                            drag_position = None
                             drag_type = 0
                         elif mouse_left_pressed:
                             pass
                         else:
                             mouse_left_pressed = True
                             drag_type = 1
-                            drag_start = canvas.get_xy()
+                            drag_start = canvas.get_map_xy()
+                            drag_position = canvas.get_xy()
                     elif mode == 3:
                         if movement_layer:
-                            canvas.flood_fill(1, canvas.get_xy(), layer, movement_layer = True)
+                            canvas.flood_fill(1, canvas.get_map_xy(), layer, movement_layer = True)
                         else:
-                            canvas.flood_fill(selected_tile, canvas.get_xy(), layer)
+                            canvas.flood_fill(selected_tile, canvas.get_map_xy(), layer)
                         
                 elif button == BUTTON_RIGHT:
                     if mode == 1:
-                        canvas.place_tile(0, canvas.get_xy(), layer, movement_layer = movement_layer) # Remove tile
+                        canvas.place_tile(0, canvas.get_map_xy(), layer, movement_layer = movement_layer) # Remove tile
                     elif mode == 2:
                         if mouse_left_pressed:
                             mouse_left_pressed = False
                             drag_start = None
+                            drag_position = None
                             drag_type = 0
                         elif mouse_right_pressed:
                             pass
                         else:
                             mouse_right_pressed = True
                             drag_type = -1
-                            drag_start = canvas.get_xy()
+                            drag_start = canvas.get_map_xy()
+                            drag_position = canvas.get_xy()
                     elif mode == 3:
-                        canvas.flood_fill(0, canvas.get_xy(), layer, movement_layer = movement_layer)
+                        canvas.flood_fill(0, canvas.get_map_xy(), layer, movement_layer = movement_layer)
 
             elif event.type == pygame.MOUSEBUTTONUP:
                 if mode == 2:
                     button = event.button
                     if button == BUTTON_LEFT and mouse_left_pressed:
                         mouse_left_pressed = False
-                        drag_end = canvas.get_xy()
+                        drag_end = canvas.get_map_xy()
                     elif button == BUTTON_RIGHT and mouse_right_pressed:
                         mouse_right_pressed = False
-                        drag_end = canvas.get_xy()
+                        drag_end = canvas.get_map_xy()
             
             # Trocar tile atual - Roda do mouse
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -329,7 +339,7 @@ def main():
         
         if (mouse_left_pressed or mouse_right_pressed) and mode == 2:
             mx, my = canvas.get_xy()
-            px, py = drag_start
+            px, py = drag_position
             if px > mx:
                 px, mx = mx, px
             if py > my:
@@ -356,7 +366,7 @@ def main():
                 layer,
                 movement_layer = movement_layer,
             )
-            drag_start, drag_end = None, None
+            drag_start, drag_end, drag_position = None, None, None
             drag_type = 0
 
         # canvas.pointer_tile(selected_tile)

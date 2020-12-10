@@ -1,11 +1,11 @@
-from typing import Optional
+from typing import List, Literal, Optional, Union
 from PPlayMaps.types import Vector
 import json
 import os
 from PIL import Image
 import pygame
 from PPlayMaps import Tileset, config as conf
-from .helpers import clamp
+from .helpers import add_v, clamp, sub_v
 config = conf.config
 active = config["active"]
 
@@ -16,7 +16,7 @@ class Map:
             name,
             layers = None,
             movement = None,
-            tileset = active["default_tileset"],
+            tileset = None,
             height = 16,
             width = 30,
             project = None,
@@ -29,6 +29,7 @@ class Map:
         self.height = height
         self.width = width
         self.background = background
+        tileset = tileset if tileset is not None else active["default_tileset"]
         bgcolor = background["background_color"] if "background_color" in background else (0, 0, 0)
         self.bgcolor = (bgcolor[0], bgcolor[1], bgcolor[2])
         self.bgimage = bgimage
@@ -64,7 +65,7 @@ class Map:
                 data = json.load(json_file)
             if "image" in data["background"]:
                 img_path = os.path.join(path, data["background"]["image"])
-                bgimage = pygame.image.load(img_path)
+                bgimage = pygame.image.load(img_path).convert_alpha()
             else:
                 bgimage = None
             return cls(
@@ -84,8 +85,8 @@ class Map:
         return cls.load_from(path)
 
     @property
-    def size(self):
-        return (self.width, self.height)
+    def size(self) -> Vector:
+        return Vector(self.width, self.height)
     
     def export(self, project: Optional[str] = None):
         tileset_name = self.tileset
@@ -107,7 +108,13 @@ class Map:
         index = layer - 1
         self.layers[index] = Map.init_layer()
 
-    def place_tile(self, tile: int, pos: Vector, layer: int, movement_layer: bool = False):
+    def place_tile(
+        self,
+        tile: int,
+        pos: Vector,
+        layer: int,
+        movement_layer: bool = False
+    ):
         x, y = pos
         if min(pos) < 0:
             return
@@ -163,17 +170,30 @@ class Map:
                 if y > 0: stack.append((x, y - 1))
                 if y < ymax: stack.append((x, y + 1))
     
-    def get_tile(self, pos: Vector, z: int):
+    def get_tile(self, pos: Vector, z: int) -> int:
         x, y = pos
         if min(pos) < 0:
-            return
+            return 0
         if (x >= self.width) or (y >= self.height):
-            return
+            return 0
         return self.layers[z - 1][y][x]
+    
+    def resize(self, value: Vector, *, op: Literal["=", "+", "-"] = "="):
+        w, h = size = self.size
+        if op == "=":
+            new_size = value
+        elif op == "+":
+            new_size = add_v(size, value)
+        elif op == "-":
+            new_size = sub_v(size, value)
+        else:
+            return
+        self.width, self.height = x, y = new_size
+        dx, dy = x - w, y - h
+        self.layers = [[line[:x] + [0]*dx for line in (layer[:y] + ([[0]*x]*dy))] for layer in self.layers]
+        self.movement = [line[:x] + [0]*dx for line in (self.movement[:y] + ([[0]*x]*dy))]
 
-    def init_layer(self):
+    def init_layer(self) -> List[List[int]]:
         # 30x16
-        layer = []
-        for i in range(self.height):
-            layer.append([0] * self.width)
-        return layer
+        w, h = self.height, self.width
+        return [[0] * w for _ in range(h)]

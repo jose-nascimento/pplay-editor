@@ -36,7 +36,7 @@ class Tileset:
         if mode == "export":
             tiles = [Image.open(x).convert("RGBA") for x in tile_list]
         else:
-            tiles = [pygame.image.load(x) for x in tile_list]
+            tiles = [pygame.image.load(x).convert_alpha() for x in tile_list]
         tileset = cls(name, tiles, tile_size = tile_size)
         return tileset
 
