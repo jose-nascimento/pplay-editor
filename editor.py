@@ -113,13 +113,13 @@ def init_display() -> Tuple[Canvas, pygame.Surface, Vector, Vector, Margin]:
     if screen_size is None:
         info = pygame.display.Info()
         # print(info)
-        screen_size = (sw, sh) = info.current_w, info.current_h
+        screen_size = info.current_w, info.current_h
     else:
         screen_size = screen_size.split("x")
-        screen_size = (sw, sh) = (int(screen_size[0]), int(screen_size[1]))
+        screen_size = (int(screen_size[0]), int(screen_size[1]))
 
     # print(f"Screen size: {screen_size}")
-    screen = pygame.display.set_mode(screen_size, pygame.RESIZABLE, 32) # 16x9 / 32x18
+    screen = pygame.display.set_mode(screen_size, pygame.RESIZABLE, 32) # 16x9 -> 32x18
     # print(" ---------------- Screen init ---------------- ")
     # info = pygame.display.Info()
     # print(info)
@@ -139,7 +139,6 @@ def init_display() -> Tuple[Canvas, pygame.Surface, Vector, Vector, Margin]:
         canvas_size,
         screen_tile_size
     )
-    # canvas = Canvas(canvas_position, visible_map_size, canvas_size)
 
     screen.fill((128, 128, 128))
     return canvas, screen, current_size, screen_tile_size, margin

@@ -4,8 +4,8 @@ from PPlayMaps import Scenario
 
 class Canvas(Scenario):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args, limit_margin: bool = True, **kwargs):
+        super().__init__(*args, limit_margin, **kwargs)
 
     # =========== Mostra tile atual na posição do mouse ===========
     def pointer_tile(self, tile):

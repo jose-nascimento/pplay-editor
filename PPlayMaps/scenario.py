@@ -7,14 +7,20 @@ from .helpers import clamp_2, add_v
 class Scenario:
 
     @staticmethod
-    def calc_size(size: Vector, screen_size: Vector, tile_size: Optional[Vector] = None) -> Tuple[Vector, Vector, Vector]:
+    def calc_size(
+        size: Vector,
+        screen_size: Vector,
+        tile_size: Optional[Vector] = None,
+        limit_margin: bool = False
+    ) -> Tuple[Vector, Vector, Vector]:
         sw, sh = screen_size
         width, height = size
 
         if tile_size == None:
             tile_size = (sw // width, sh // height)
-            min_tile = min(tile_size)
-            tile_size = Vector(min_tile, min_tile)
+            if limit_margin:
+                min_tile = min(tile_size)
+                tile_size = Vector(min_tile, min_tile)
         
         tx, ty = tile_size
         display_size = (vw, vh) = (width * tx, height * ty)
@@ -28,12 +34,15 @@ class Scenario:
         position: Vector,
         size: Vector,
         screen_size: Vector,
-        tile_size: Optional[Vector] = None
+        tile_size: Optional[Vector] = None,
+        limit_margin: bool = False
     ) -> None:
-        # cw, ch = screen_size
-        # screen_tile_size = (cw // width, ch // height)
-        # rw, rh = cw % width, cw % height
-        display_size, margin, screen_tile_size = self.calc_size(size, screen_size, tile_size)
+        display_size, margin, screen_tile_size = self.calc_size(
+            size,
+            screen_size,
+            tile_size,
+            limit_margin = limit_margin
+        )
         width, height = size
 
         self.width = width
