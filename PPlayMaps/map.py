@@ -103,9 +103,9 @@ class Map:
                         canvas.paste(tileset[tile], (x * delta, y * delta), tileset[tile])
         canvas.save(os.path.join(self.path, f"{self.name}.png"))
 
-    def clear_layer(self, index: int):
-        layer = index - 1
-        self.layers[layer] = Map.init_layer()
+    def clear_layer(self, layer: int):
+        index = layer - 1
+        self.layers[index] = Map.init_layer()
 
     def place_tile(self, tile: int, pos: Vector, layer: int, movement_layer: bool = False):
         x, y = pos
@@ -139,9 +139,6 @@ class Map:
         for line in mp[y0:y1]:
             for x, _ in enumerate(line[x0:x1]):
                 line[x + x0] = tile
-            # for x, _ in enumerate(line):
-            #     if x0 <= x < x1:
-            #         line[x] = tile
     
     def flood_fill(self, tile: int, point: Vector, layer: int, movement_layer: bool = False):
         # usa o algoritmo "scanline fill"

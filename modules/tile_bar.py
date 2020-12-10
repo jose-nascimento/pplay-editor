@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 import pygame
 from PPlayMaps import Tileset, Vector
 
@@ -145,6 +145,27 @@ class TileBar:
         self.curr_scroll = new_scroll
         return new_scroll
 
+    def draw_arrow(self, direction: str) -> pygame.Surface:
+        scroll = self.curr_scroll
+        height = self.margin
+        width = self.width
+        
+        if direction == "up":
+            y0, y1 = (height, 0)
+            limit = 0
+        else:
+            y0, y1 = (0, height)
+            limit = self.max_scroll
+
+        color =  (192, 192, 192) if scroll == limit else (64, 64, 64)
+        middle = width // 2
+
+        rect = pygame.Surface((width, height))
+        rect.fill((255, 255, 255))
+        pygame.draw.lines(rect, color, False, [(0, y0), (middle, y1), (width, y0)], width = 4)
+
+        return rect
+
     def blit(self):
         d = self.tileset.tile_size
         tiles = [0] + self.tileset.tiles
@@ -167,5 +188,9 @@ class TileBar:
             pygame.draw.rect(self.display, (24, 144, 255), (0, tile_y, d, d), width = 1)
     
     def draw_self(self, screen):
-        self.screen.blit(pygame.transform.scale(self.display, (self.width, self.inner_height)), (0, self.margin))
+        inner_height = self.inner_height
+        margin = self.margin
+        self.screen.blit(pygame.transform.scale(self.display, (self.width, inner_height)), (0, margin))
+        self.screen.blit(self.draw_arrow("up"), (0, 0))
+        self.screen.blit(self.draw_arrow("down"), (0, inner_height + margin))
         screen.blit(self.screen, self.position)

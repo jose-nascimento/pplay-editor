@@ -51,6 +51,10 @@ class Scenario:
         self.screen = pygame.Surface(screen_size)
         self.screen.fill((192, 192, 192))
 
+    @property
+    def size(self):
+        return (self.width, self.height)
+
     def on_resize(
         self,
         position: Optional[Vector] = None,
@@ -124,12 +128,47 @@ class Scenario:
 
         self.display = pygame.Surface(dimensions)
 
-    def load_map(self, name):
-        map = Map.load_map(name)
+    def load_map(
+        self,
+        name: Optional[str] = None,
+        project: Optional[str] = None,
+        path: Optional[str] = None
+    ):
+        if path:
+            map = Map.load_from(path)
+        else:
+            map = Map.load(name, project = project)
+            
         tileset_name = map.tileset
-        tileset = Tileset.load_tiles(tileset_name)
+        tileset = Tileset.load(tileset_name, project = project)
 
         self.set_map(map, tileset)
+
+    # ------------ Map manipulation ------------
+
+    def clear_layer(self, layer: int):
+        self.map.clear_layer(layer)
+
+    def place_tile(self, tile: int, pos: Vector, layer: int, movement_layer: bool = False):
+        self.map.place_tile(tile, pos, layer, movement_layer = movement_layer)
+
+    def fill_area(
+        self,
+        tile: int,
+        start: Vector,
+        end: Vector,
+        layer: int,
+        movement_layer: bool = False
+    ):
+        self.map.fill_area(tile, start, end, layer, movement_layer = movement_layer)
+    
+    def flood_fill(self, tile: int, point: Vector, layer: int, movement_layer: bool = False):
+        self.map.flood_fill(tile, point, layer, movement_layer = movement_layer)
+
+    def get_tile(self, pos: Vector, layer: int):
+        self.map.get_tile(pos, layer)
+
+    # ---------- End map manipulation ----------
 
     def scroll(self, delta: Union[Vector, int], dy: Optional[int] = None):
         if type(delta) == int:

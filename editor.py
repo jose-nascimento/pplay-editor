@@ -1,5 +1,5 @@
 import os
-from typing import Tuple, NamedTuple
+from typing import Tuple, Optional
 from pygame.locals import *
 import pygame
 from PPlayMaps import Map, Tileset, Margin, Color, Vector, config as conf
@@ -17,7 +17,7 @@ class Label:
     def set_position(self, position: Vector):
         self.position = position
 
-    def set(self, text, color = None):
+    def set(self, text, color: Optional[Color] = None):
         if color is None:
             color = self.color
         else:
@@ -33,7 +33,7 @@ def get_positions(margin: Margin):
 
     return tilebar_position, label_position
 
-def label_text(layer: int = 0, mode: int = 0, movement_layer = False) -> str:
+def label_text(layer: int = 0, mode: int = 0, movement_layer: bool = False) -> str:
     layer_label = ["1", "2", "3", "4", "Movimento (M)"]
     if movement_layer:
         layer_label[-1] = f"[{layer_label[-1]}]"
@@ -78,7 +78,7 @@ def compute_dimensions() -> Tuple[Vector, Vector, Vector, Vector, Vector, Margin
     (curr_w, curr_h) = current_size = Vector(info.current_w, info.current_h)
 
     (vw, vh) = visible_map_size = Vector(30, 16)
-    total_size = (tw, th)  = (vw + 2, vh + 2)
+    (tw, th)  = (vw + 2, vh + 2)
     screen_tile_size = tx, ty = (curr_w // tw, curr_h // th)
     min_tile = min(screen_tile_size)
     # min_tile_type = "x" if min_tile == tx else "y"
@@ -133,7 +133,12 @@ def init_display() -> Tuple[Canvas, pygame.Surface, Vector, Vector, Margin]:
         margin
     ) = compute_dimensions()
 
-    canvas = Canvas(canvas_position, visible_map_size, canvas_size, screen_tile_size)
+    canvas = Canvas(
+        canvas_position,
+        visible_map_size,
+        canvas_size,
+        screen_tile_size
+    )
     # canvas = Canvas(canvas_position, visible_map_size, canvas_size)
 
     screen.fill((128, 128, 128))
@@ -156,15 +161,6 @@ def handle_resize(canvas: Canvas, tilebar: TileBar, label: Label):
     tilebar.on_resize(tilebar_position, current_size, screen_tile_size)
     label.set_position(label_position)
 
-
-# def tiles_onscroll(selected_tile: int, direction: int, size: int) -> int:
-#     selected_tile += direction
-#     if selected_tile < 0:
-#         selected_tile = size
-#     if selected_tile > size:
-#         selected_tile = 0
-#     return selected_tile
-
 def set_cursor(canvas: Canvas, mode: int):
     global sizer_xy
     if canvas.is_mouseouver():
@@ -186,7 +182,7 @@ def main():
     map, tileset, tile_bar, menu_label = init_assets(canvas, screen_tile_size, margin, current_size)
     d = tileset.tile_size # delta
     clock = pygame.time.Clock()
-    pos = x, y = pygame.mouse.get_pos()
+    x, y = pygame.mouse.get_pos()
     resize_count = 0
     selected_tile = tile_bar.selected_tile
     mode = 1
@@ -218,17 +214,13 @@ def main():
             elif event.type == pygame.KEYDOWN:
                 if event.key == K_ESCAPE:
                     loop = False
-                # Salva mapa com 's'
-                if event.key == K_s:
-                    # num_file = len(os.listdir())
-                    # map_name = f"map{num_file}.png"
-                    # pygame.image.save(screen, map_name)
+                # Salva mapa com Ctrl+S
+                if event.key == K_s and pygame.key.get_mods() & pygame.KMOD_CTRL:
                     map.export()
                     map.save_map()
-                    # os.startfile(map_name)
                 
                 if event.key == K_c:
-                    selected_tile = map.get_tile(canvas.get_xy(), layer)
+                    selected_tile = canvas.get_tile(canvas.get_xy(), layer)
                     tile_bar.set_tile(selected_tile)
                 
                 # =================== TOGGLE =================== #
@@ -276,9 +268,9 @@ def main():
                 elif button == BUTTON_LEFT:
                     if mode == 1:
                         if movement_layer:
-                            map.place_tile(1, canvas.get_xy(), layer, movement_layer = True)
+                            canvas.place_tile(1, canvas.get_xy(), layer, movement_layer = True)
                         else:
-                            map.place_tile(selected_tile, canvas.get_xy(), layer) # Insere tile
+                            canvas.place_tile(selected_tile, canvas.get_xy(), layer) # Insere tile
                     elif mode == 2:
                         if mouse_right_pressed:
                             mouse_right_pressed = False
@@ -292,13 +284,13 @@ def main():
                             drag_start = canvas.get_xy()
                     elif mode == 3:
                         if movement_layer:
-                            map.flood_fill(1, canvas.get_xy(), layer, movement_layer = True)
+                            canvas.flood_fill(1, canvas.get_xy(), layer, movement_layer = True)
                         else:
-                            map.flood_fill(selected_tile, canvas.get_xy(), layer)
+                            canvas.flood_fill(selected_tile, canvas.get_xy(), layer)
                         
                 elif button == BUTTON_RIGHT:
                     if mode == 1:
-                        map.place_tile(0, canvas.get_xy(), layer, movement_layer = movement_layer) # Remove tile
+                        canvas.place_tile(0, canvas.get_xy(), layer, movement_layer = movement_layer) # Remove tile
                     elif mode == 2:
                         if mouse_left_pressed:
                             mouse_left_pressed = False
@@ -311,7 +303,7 @@ def main():
                             drag_type = -1
                             drag_start = canvas.get_xy()
                     elif mode == 3:
-                        map.flood_fill(0, canvas.get_xy(), layer, movement_layer = movement_layer)
+                        canvas.flood_fill(0, canvas.get_xy(), layer, movement_layer = movement_layer)
 
             elif event.type == pygame.MOUSEBUTTONUP:
                 if mode == 2:
@@ -358,7 +350,7 @@ def main():
                 fill_tile = 1 if drag_type == 1 else 0
             else:
                 fill_tile = selected_tile if drag_type == 1 else 0
-            map.fill_area(
+            canvas.fill_area(
                 fill_tile, 
                 drag_start,
                 drag_end,
