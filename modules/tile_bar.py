@@ -4,12 +4,12 @@ from PPlayMaps import Tileset, Vector
 
 class TileBar:
 
-    @staticmethod
     def calc_size(
+        self,
         position: Vector,
         screen_size: Vector,
         screen_tile_size: Vector
-    ) -> Tuple[int, int, int, int]:
+    ) -> Tuple[int, int]:
         sw, sh = screen_size
         tx, ty = screen_tile_size
 
@@ -18,7 +18,17 @@ class TileBar:
         inner_height = length * ty
         margin = (height - inner_height) // 2
 
-        return height, inner_height, length, margin
+        self.height = height
+        self.inner_height = inner_height
+        self.length = length
+        self.margin = margin
+
+        self.screen_size = screen_size
+        self.screen_tile_size = screen_tile_size
+        self.width = ty
+        self.position = position
+
+        return height, length
 
     def __init__(
         self,
@@ -27,18 +37,11 @@ class TileBar:
         screen_size: Tuple[int, int],
         screen_tile_size: Tuple[int, int],
     ) -> None:
-        height, inner_height, length, margin = self.calc_size(position, screen_size, screen_tile_size)
+        height, length = self.calc_size(position, screen_size, screen_tile_size)
 
-        self.height = height
-        self.inner_height = inner_height
-        self.__length__ = self.length = length
-        self.margin = margin
-        self.width = width = screen_tile_size[0]
+        width = screen_tile_size[0]
 
         self.tileset = tileset
-        self.screen_size = screen_size
-        self.screen_tile_size = screen_tile_size
-        self.position = position
 
         tile_size = tileset.tile_size
         self.tile_size = tile_size
@@ -47,6 +50,7 @@ class TileBar:
         self.curr_scroll = 0
 
         self.selected_tile = 0
+
         self.screen = pygame.Surface((width, height))
         self.display = pygame.Surface((tile_size, length * tile_size))
         self.screen.fill((255, 255, 255))
@@ -121,17 +125,9 @@ class TileBar:
         if screen_size is None: screen_size = self.screen_size
         if screen_tile_size is None: screen_tile_size = self.screen_tile_size
 
-        height, inner_height, length, margin = self.calc_size(position, screen_size, screen_tile_size)
+        height, length = self.calc_size(position, screen_size, screen_tile_size)
 
-        self.height = height
-        self.inner_height = inner_height
-        self.__length__ = self.length = length
-        self.margin = margin
-        self.width = width = screen_tile_size[0]
-
-        self.screen_size = screen_size
-        self.screen_tile_size = screen_tile_size
-        self.position = position
+        width = screen_tile_size[0]
 
         # tile_size = self.tile_size
         # self.display = pygame.Surface((tile_size, length * tile_size))

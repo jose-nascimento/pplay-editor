@@ -51,6 +51,7 @@ class Scenario:
         screen_size: Vector,
         tile_size: Optional[Vector] = None,
         *,
+        fill_color: Color = (192, 192, 192),
         limit_margin: bool = False
     ) -> None:
         self.calc_size(
@@ -61,12 +62,13 @@ class Scenario:
             limit_margin = limit_margin
         )
 
+        self.fill_color = fill_color
         self.curr_scroll = Vector(0, 0)
         self.max_scroll = Vector(0, 0)
         self.map_size = None
 
         self.screen = pygame.Surface(screen_size)
-        self.screen.fill((192, 192, 192))
+        self.screen.fill(fill_color)
 
     @property
     def size(self):
@@ -90,7 +92,8 @@ class Scenario:
             self.calc_map_display()
         
         self.screen = pygame.Surface(screen_size)
-        self.screen.fill((192, 192, 192))
+        fill_color = self.fill_color
+        self.screen.fill(fill_color)
 
     def map_hw(self) -> Vector:
         map = self.map
