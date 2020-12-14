@@ -1,4 +1,6 @@
 from typing import List, Literal, Optional, Union
+
+from pygame.locals import Color
 from PPlayMaps.types import Vector
 import json
 import os
@@ -29,7 +31,7 @@ class Map:
         self.height = height
         self.width = width
         self.background = background
-        tileset = tileset if tileset is not None else active["default_tileset"]
+        tileset = tileset
         bgcolor = background["background_color"] if "background_color" in background else (0, 0, 0)
         self.bgcolor = (bgcolor[0], bgcolor[1], bgcolor[2])
         self.bgimage = bgimage
@@ -106,7 +108,10 @@ class Map:
 
     def clear_layer(self, layer: int):
         index = layer - 1
-        self.layers[index] = Map.init_layer()
+        self.layers[index] = self.init_layer()
+
+    def clear_movement(self):
+        self.movement = self.init_layer()
 
     def place_tile(
         self,
@@ -192,6 +197,14 @@ class Map:
         dx, dy = x - w, y - h
         self.layers = [[line[:x] + [0]*dx for line in (layer[:y] + ([[0]*x]*dy))] for layer in self.layers]
         self.movement = [line[:x] + [0]*dx for line in (self.movement[:y] + ([[0]*x]*dy))]
+
+    def set_bgcolor(self, color: Color):
+        self.bgcolor = color
+
+    def set_bgimage(self, image: str):
+        path = os.path.join(self.path, image)
+        bgimage = pygame.image.load(path).convert_alpha()
+        self.bgimage = bgimage
 
     def init_layer(self) -> List[List[int]]:
         # 30x16

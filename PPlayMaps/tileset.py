@@ -9,11 +9,12 @@ active = config["active"]
 
 class Tileset:
 
-    def __init__(self, name: str, tiles, tile_size = 16):
+    def __init__(self, name: str, tiles = None, tile_size: int = 16):
+        if not tiles:
+            tiles = []
         self.name = name
         self.tile_size = tile_size
         self.tiles = tiles
-        # self.tiles = [pygame.image.fromstring(i.tobytes(), i.size, i.mode) for i in tiles]
 
     def __getitem__(self, key):
         if key == 0:
@@ -25,6 +26,8 @@ class Tileset:
 
     def __len__(self):
         return len(self.tiles)
+
+    
 
     @classmethod
     def load_from(cls, path, mode: str = "default"):
@@ -44,7 +47,7 @@ class Tileset:
     @classmethod
     def load(cls, name: str = None, project: str = None, mode: str = "default"):
         if name == None:
-            name = active["default_tileset"]
+            return cls("default")
         path = config.default_folder(project)
         path = os.path.join(path, "tilesets", name)
         return cls.load_from(path, mode)

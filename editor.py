@@ -3,7 +3,7 @@ from typing import Tuple, Optional
 from pygame.locals import *
 import pygame
 from PPlayMaps import Map, Tileset, Margin, Color, Vector, config as conf
-from modules import Canvas, TileBar
+from modules import Canvas, TileBar, utils
 config = conf.config
 active = config["active"]
 class Label:
@@ -223,8 +223,9 @@ def main():
                     loop = False
                 # Salva mapa com Ctrl+S
                 if event.key == K_s and pygame.key.get_mods() & pygame.KMOD_CTRL:
-                    map.export()
+                    # map.export()
                     map.save_map()
+                    # utils.export_project("default")
                 
                 if event.key == K_c:
                     selected_tile = canvas.get_tile(canvas.get_map_xy(), layer)

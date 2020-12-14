@@ -1,4 +1,5 @@
 from typing import Literal, Tuple, Optional, Union
+from pygame import image
 from pygame.locals import *
 import pygame
 from PPlayMaps import Map, Tileset, Vector
@@ -26,7 +27,6 @@ class Scenario:
         
         tx, ty = tile_size
         display_size = (vw, vh) = (width * tx, height * ty)
-        # screen_tile_size = (sw // width, sh // height)
         margin = ((sw - vw) // 2, (sh - vh) // 2)
 
         if limit_margin is None:
@@ -66,6 +66,7 @@ class Scenario:
         self.curr_scroll = Vector(0, 0)
         self.max_scroll = Vector(0, 0)
         self.map_size = None
+        self.bgimage_override = None
 
         self.screen = pygame.Surface(screen_size)
         self.screen.fill(fill_color)
@@ -161,6 +162,9 @@ class Scenario:
     def clear_layer(self, layer: int):
         self.map.clear_layer(layer)
 
+    def clear_movement(self):
+        self.map.clear_movement()
+
     def place_tile(self, tile: int, pos: Vector, layer: int, movement_layer: bool = False):
         self.map.place_tile(tile, pos, layer, movement_layer = movement_layer)
 
@@ -182,6 +186,16 @@ class Scenario:
 
     def resize(self, value: Vector, *, op: Literal["=", "+", "-"] = "="):
         return self.map.resize(value, op = op)
+
+    def set_bgcolor(self, color: Color = (0, 0, 0)):
+        self.map.set_bgcolor(color)
+
+    def set_bgimage(self, name: Optional[str] = None, path: Optional[str] = None):
+        if name is not None:
+            self.map.set_bgimage(name)
+        elif path is not None:
+            image = pygame.image.load(path).convert_alpha()
+            self.bgimage_override = image
 
     # ---------- End map manipulation ----------
 
@@ -270,7 +284,10 @@ class Scenario:
         map = self.map
         show_layers = self.show_layers
         self.display.fill(map.bgcolor)
-        if map.bgimage: self.display.blit(map.bgimage, (0, 0))
+        if self.bgimage_override:
+            self.display.blit(self.bgimage_override, (0, 0))
+        elif map.bgimage:
+            self.display.blit(map.bgimage, (0, 0))
 
         if show_layers & 0b0001:
             self.blit_tiles(1)
