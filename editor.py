@@ -2,8 +2,9 @@ import os, sys
 from typing import Tuple, Optional
 from pygame.locals import *
 import pygame
+from pygame_menu import events
 from PPlayMaps import Map, Tileset, Margin, Color, Vector, config as conf
-from modules import Canvas, TileBar, utils
+from modules import Canvas, TileBar, Menu, events as editor_events, utils
 config = conf.config
 active = config["active"]
 class Label:
@@ -53,13 +54,33 @@ def label_text(layer: int = 0, mode: int = 0, movement_layer: bool = False) -> s
         mode_label[(mode - 1) * 2] = f"[{mode_label[(mode - 1) * 2]}]"
     return f"Camada: {' '.join(layer_label)} | Esconder/Mostrar - H | Somente atual - T | {' '.join(mode_label)}"
 
+def load_map(name: str, canvas: Canvas, tile_bar: TileBar) -> Tuple[Map, Tileset]:
+    map = Map.load(name)
+    tileset = Tileset.load(name = map.tileset)
+
+    utils.set_start_map(name)
+
+    canvas.set_map(map, tileset)
+    tile_bar.set_tileset(tileset)
+
+    return map, tileset
+
+def load_project(name: str, canvas: Canvas, tile_bar: TileBar) -> Tuple[Map, Tileset]:
+    active["active_project"] = name
+    project_path = config.default_folder(name)
+    config.read(os.path.join(project_path, "project.ini"))
+    config.write_changes()
+    map_name = active["start_map"]
+
+    return load_map(map_name, canvas, tile_bar)
+
 def init_assets(
     canvas: Canvas,
     tile_size: Vector,
     margin: Margin,
     screen_size: Vector,
-    project = None,
-    map_name = None
+    project: Optional[str] = None,
+    map_name: Optional[str] = None
 ) -> Tuple[Map, Tileset, TileBar, Label]:
     if project is not None:
         active["active_project"] = project
@@ -186,8 +207,10 @@ def main():
     pygame.init()
     canvas, screen, current_size, screen_tile_size, margin = init_display()
     map, tileset, tile_bar, menu_label = init_assets(canvas, screen_tile_size, margin, current_size)
+    menu = Menu(height = 400, width = 400, title = "Menu Principal")
+    # menu.disable()
+
     d = tileset.tile_size # delta
-    clock = pygame.time.Clock()
     x, y = pygame.mouse.get_pos()
     resize_count = 0
     selected_tile = tile_bar.selected_tile
@@ -203,6 +226,7 @@ def main():
     layer = 1
     movement_layer = False
 
+    clock = pygame.time.Clock()
     loop = True
     while loop:
         menu_label.set(label_text(layer, mode, movement_layer))
@@ -211,16 +235,25 @@ def main():
         if movement_layer: canvas.blit_movement()
         tile_bar.blit()
         set_cursor(canvas, mode)
-        
-        for event in pygame.event.get():
+
+        events = pygame.event.get() 
+        if menu.is_enabled():
+            menu.update(events)      
+        for event in events:
             if event.type == QUIT:
                 loop = False
             elif event.type == pygame.VIDEORESIZE:
                 resize_count += 1
                 if resize_count > 1: handle_resize(canvas, tile_bar, menu_label)
+            elif event.type == editor_events.CHANGE_PROJECT:
+                map, tileset = load_project(event.project, canvas, tile_bar)
+            elif event.type == editor_events.CHANGE_MAP:
+                map, tileset = load_map(event.map, canvas, tile_bar)
+            elif menu.is_enabled():
+                pass
             elif event.type == pygame.KEYDOWN:
                 if event.key == K_ESCAPE:
-                    loop = False
+                    menu.enable()
                 # Salva mapa com Ctrl+S
                 if event.key == K_s and pygame.key.get_mods() & pygame.KMOD_CTRL:
                     # map.export()
@@ -314,6 +347,18 @@ def main():
                             drag_position = canvas.get_xy()
                     elif mode == 3:
                         canvas.flood_fill(0, canvas.get_map_xy(), layer, movement_layer = movement_layer)
+                
+                # Trocar tile atual - Roda do mouse
+                if canvas.is_mouseouver():
+                    if button == 4: # para baixo
+                        canvas.scroll(0, -1)
+                    if button == 5: # para cima
+                        canvas.scroll(0, 1)
+                elif tile_bar.is_mouseouver():
+                    if button == 4: # para baixo
+                        selected_tile = tile_bar.scroll(-1)
+                    if button == 5: # para cima
+                        selected_tile = tile_bar.scroll(1)
 
             elif event.type == pygame.MOUSEBUTTONUP:
                 if mode == 2:
@@ -324,19 +369,6 @@ def main():
                     elif button == BUTTON_RIGHT and mouse_right_pressed:
                         mouse_right_pressed = False
                         drag_end = canvas.get_map_xy()
-            
-            # Trocar tile atual - Roda do mouse
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if canvas.is_mouseouver():
-                    if event.button == 4: # para baixo
-                        canvas.scroll(0, -1)
-                    if event.button == 5: # para cima
-                        canvas.scroll(0, 1)
-                elif tile_bar.is_mouseouver():
-                    if event.button == 4: # para baixo
-                        selected_tile = tile_bar.scroll(-1)
-                    if event.button == 5: # para cima
-                        selected_tile = tile_bar.scroll(1)
         
         if (mouse_left_pressed or mouse_right_pressed) and mode == 2:
             mx, my = canvas.get_xy()
@@ -374,6 +406,8 @@ def main():
         tile_bar.draw_self(screen)
         menu_label.blit(screen)
         canvas.draw_self(screen)
+        if menu.is_enabled():
+            menu.draw(screen)
         pygame.display.update()
         clock.tick(30)
 

@@ -4,10 +4,12 @@ config = configparser.ConfigParser()
 
 if "config.ini" in os.listdir():
     config.read("config.ini")
-else:
-    config["DEFAULT"]["default_tileset"] = "default"
 
 project_folder = config["active"].get("project_folder", None)
+
+def write_changes():
+    with open("config.ini", "w") as configfile:
+        config.write(configfile)
 
 def default_folder(project = None):
     if project_folder == None:
@@ -17,3 +19,4 @@ def default_folder(project = None):
         return os.path.join(project_folder, project)
 
 config.default_folder = default_folder
+config.write_changes = write_changes

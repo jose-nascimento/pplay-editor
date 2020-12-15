@@ -39,7 +39,7 @@ class Map:
         self.project = project
         self.path = path
         self.movement = movement if movement else self.init_layer()
-        self.layers = layers if layers else [self.init_layer(), self.init_layer(), self.init_layer()]
+        self.layers = layers if layers else [self.init_layer() for _ in range(4)]
 
     def save_map(self):
         path = os.path.join(self.path, "map.json")
@@ -207,6 +207,5 @@ class Map:
         self.bgimage = bgimage
 
     def init_layer(self) -> List[List[int]]:
-        # 30x16
         w, h = self.height, self.width
         return [[0] * w for _ in range(h)]

@@ -1,5 +1,7 @@
+from . import utils
+from . import events
 from .tile_bar import TileBar
 from .canvas import Canvas
-from . import utils
+from .menu import Menu
 
-__all__ = ['TileBar', 'Canvas', "utils"]
+__all__ = ['TileBar', 'Canvas', "Menu", "events", "utils"]

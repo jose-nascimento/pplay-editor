@@ -48,12 +48,24 @@ class TileBar:
         self.size = size = len(tileset)
         self.max_scroll = max(0, size + 1 - length)
         self.curr_scroll = 0
-
         self.selected_tile = 0
 
         self.screen = pygame.Surface((width, height))
         self.display = pygame.Surface((tile_size, length * tile_size))
         self.screen.fill((255, 255, 255))
+
+    def set_tileset(self, tileset: Tileset):
+        self.tileset = tileset
+        length = self.length
+
+        tile_size = tileset.tile_size
+        self.tile_size = tile_size
+        self.size = size = len(tileset)
+        self.max_scroll = max(0, size + 1 - length)
+        self.curr_scroll = 0
+        self.selected_tile = 0
+
+        self.display = pygame.Surface((tile_size, length * tile_size))
 
     def __getitem__(self, key):
         return self.tileset[key]
