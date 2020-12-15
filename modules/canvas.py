@@ -1,11 +1,74 @@
+from typing import Optional, Union
 from pygame.locals import *
 import pygame
-from PPlayMaps import Scenario
+from PPlayMaps import Scenario, Map, Tileset
+from PPlayMaps.types import Vec, Vector
+from modules import ScrollBar
 
 class Canvas(Scenario):
 
-    def __init__(self, *args, limit_margin: bool = True, **kwargs):
-        super().__init__(*args, limit_margin = limit_margin, **kwargs)
+    def __init__(
+            self,
+            position: Vec,
+            size: Vec,
+            screen_size: Vec,
+            *args,
+            limit_margin: bool = True,
+            # own arguments:
+            scroll_width: int = 16,
+            **kwargs
+        ):
+        super().__init__(
+            position,
+            size,
+            screen_size,
+            *args,
+            limit_margin = limit_margin,
+            **kwargs
+        )
+        self.scroll_width = scroll_width
+
+    def set_scrollbar(self):
+        sw, sh = self.screen_size
+        sx, sy = self.curr_scroll
+        vw, vh = self.size
+        mw, mh = self.get_map_size()
+        scroll_width = self.scroll_width
+
+        scroll_y_position = Vector(sw - scroll_width, 0)
+        scroll_x_position = Vector(0, sh - scroll_width)
+
+        self.scroll_bar_y = ScrollBar("y", scroll_y_position, sh, vh, mh, scroll_width)
+        self.scroll_bar_x = ScrollBar("x", scroll_x_position, sw, vw, mw, scroll_width)
+
+        self.scroll_bar_y.update(sy)
+        self.scroll_bar_x.update(sx)
+
+    def set_map(self, map: Map, tileset: Tileset):
+        super().set_map(map, tileset)
+
+        w, h = self.size
+        mw, mh = map.size
+        if (mh - h) > 0 or (mw - w) > 0:
+            self.set_scrollbar()
+
+    def on_resize(
+        self,
+        position: Optional[Vec] = None,
+        screen_size: Optional[Vec] = None,
+        tile_size: Optional[Vec] = None
+    ):
+        super().on_resize(position, screen_size, tile_size)
+
+        if self.map_size is not None:
+            self.set_scrollbar()
+
+    def scroll(self, delta: Union[Vec, int], dy: Optional[int] = None) -> Vector:
+        super().scroll(delta, dy)
+
+        x, y = self.curr_scroll
+        self.scroll_bar_y.update(y)
+        self.scroll_bar_x.update(x)
 
     # =========== Mostra tile atual na posição do mouse ===========
     def pointer_tile(self, tile):
@@ -36,3 +99,10 @@ class Canvas(Scenario):
                     pygame.draw.circle(self.display, (255, 255, 255), (x * d + c, y * d + c), r, width = 1)
                 elif m == 1:
                     pygame.draw.line(self.display, (255, 255, 255), (x * d + x0,  y * d + c), (x * d + x1,  y * d + c), width = 2)
+
+    def draw(self, screen: pygame.Surface):
+        display_size = self.map_size or self.display_size
+        self.screen.blit(pygame.transform.scale(self.display, display_size), self.margin)
+        self.scroll_bar_y.draw(self.screen)
+        self.scroll_bar_x.draw(self.screen)
+        screen.blit(self.screen, self.position)

@@ -75,8 +75,8 @@ class Map:
         if filename in os.listdir(path):
             with open(os.path.join(path, filename), "r") as json_file:
                 data = json.load(json_file)
-            if "image" in data["background"]:
-                img_path = os.path.join(path, data["background"]["image"])
+            if image := data["background"].get("image", None):
+                img_path = os.path.join(path, image)
                 bgimage = pygame.image.load(img_path).convert_alpha()
             else:
                 bgimage = None
@@ -213,11 +213,11 @@ class Map:
         self.bgcolor = color
 
     def set_bgimage(self, image: str):
-        path = os.path.join(self.path, image)
-        bgimage = pygame.image.load(path).convert_alpha()
+        img_path = os.path.join(self.path, image)
+        bgimage = pygame.image.load(img_path).convert_alpha()
 
-        self.background["image"] = image
         self.bgimage = bgimage
+        self.background["image"] = image
 
     def unset_bgimage(self):
         self.background["image"] = None

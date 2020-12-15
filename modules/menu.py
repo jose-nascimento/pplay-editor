@@ -138,6 +138,7 @@ class Menu(pygame_menu.Menu):
     def close_prompt(self):
         for event in self.event_queue:
             pygame.event.post(event)
+        self.event_queue = []
 
         self.full_reset()
         self._close()
@@ -243,7 +244,6 @@ class Menu(pygame_menu.Menu):
             align = pygame_menu.locals.ALIGN_LEFT
         )
         font_info = first_label.get_font_info()
-        print(f"font info: {font_info}")
         font_config = {
             "font": font_info["name"],
             "font_size": 25,

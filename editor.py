@@ -38,6 +38,9 @@ def load_map(name: str, canvas: Canvas, tile_bar: TileBar) -> Tuple[Map, Tileset
     utils.set_start_map(name)
 
     canvas.set_map(map, tileset)
+
+    map, tileset = canvas.map, canvas.tileset
+
     tile_bar.set_tileset(tileset)
 
     return map, tileset
@@ -157,7 +160,7 @@ def init_display() -> Tuple[Canvas, pygame.Surface, Vector, Vector, Margin]:
     screen.fill((128, 128, 128))
     return canvas, screen, current_size, screen_tile_size, margin
 
-def handle_resize(canvas: Canvas, tilebar: TileBar, label: Label):
+def handle_resize(canvas: Canvas, tilebar: TileBar, label: Label, menu: Menu):
     (
         canvas_position,
         visible_map_size,
@@ -173,6 +176,11 @@ def handle_resize(canvas: Canvas, tilebar: TileBar, label: Label):
 
     tilebar.on_resize(tilebar_position, current_size, screen_tile_size)
     label.set_position(label_position)
+    menu_enabled = menu.is_enabled()
+    menu = Menu(height = 600, width = 500, title = "Menu Principal", canvas = canvas)
+    if not menu_enabled: menu.disable()
+
+    return menu
 
 def set_cursor(canvas: Canvas, mode: int):
     global sizer_xy
@@ -230,7 +238,8 @@ def main():
                 loop = False
             elif event.type == pygame.VIDEORESIZE:
                 resize_count += 1
-                if resize_count > 1: handle_resize(canvas, tile_bar, menu_label)
+                if resize_count > 1:
+                    menu = handle_resize(canvas, tile_bar, menu_label, menu)
             elif event.type == editor_events.CHANGE_PROJECT:
                 map, tileset = load_project(event.project, canvas, tile_bar)
                 selected_tile = 0
@@ -401,9 +410,9 @@ def main():
             drag_type = 0
 
         # canvas.pointer_tile(selected_tile)
-        tile_bar.draw_self(screen)
+        tile_bar.draw(screen)
         menu_label.blit(screen)
-        canvas.draw_self(screen)
+        canvas.draw(screen)
         if menu.is_enabled():
             menu.draw(screen)
         pygame.display.update()

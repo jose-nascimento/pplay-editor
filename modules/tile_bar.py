@@ -207,7 +207,7 @@ class TileBar:
             tile_y = (selected_tile - curr_scroll) * d
             pygame.draw.rect(self.display, (24, 144, 255), (0, tile_y, d, d), width = 1)
     
-    def draw_self(self, screen):
+    def draw(self, screen):
         inner_height = self.inner_height
         margin = self.margin
         self.screen.blit(pygame.transform.scale(self.display, (self.width, inner_height)), (0, margin))

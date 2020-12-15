@@ -20,6 +20,11 @@ class Scenario:
         sw, sh = screen_size
         width, height = size
 
+        if limit_margin is None:
+            limit_margin = self.limit_margin
+        else:
+            self.limit_margin = limit_margin
+
         if tile_size == None:
             tile_size = (sw // width, sh // height)
             if limit_margin:
@@ -31,11 +36,6 @@ class Scenario:
         tx, ty = tile_size
         (vw, vh) = display_size = Vector(width * tx, height * ty)
         margin = Vector((sw - vw) // 2, (sh - vh) // 2)
-
-        if limit_margin is None:
-            limit_margin = self.limit_margin
-        else:
-            self.limit_margin = limit_margin
 
         self.width = width
         self.height = height
@@ -75,15 +75,15 @@ class Scenario:
         self.screen.fill(fill_color)
 
     @property
-    def size(self):
-        return (self.width, self.height)
+    def size(self) -> Vector:
+        return Vector(self.width, self.height)
 
     def on_resize(
         self,
         position: Optional[Vec] = None,
         screen_size: Optional[Vec] = None,
         tile_size: Optional[Vec] = None
-    ) -> None:
+    ):
         if position is None: position = self.position
         if screen_size is None: screen_size = self.screen_size
         if tile_size is None: tile_size = self.screen_tile_size
@@ -95,9 +95,9 @@ class Scenario:
         if self.map_size is not None:
             self.calc_map_display()
         
+        self.position = position
         self.screen = pygame.Surface(screen_size)
-        fill_color = self.fill_color
-        self.screen.fill(fill_color)
+        self.screen.fill(self.fill_color)
 
     def map_hw(self) -> Vector:
         map = self.map
@@ -159,6 +159,9 @@ class Scenario:
         tileset = Tileset.load(tileset_name, project = project)
 
         self.set_map(map, tileset)
+
+    def get_map_size(self) -> Vector:
+        return self.map.size
 
     # ------------ Map manipulation ------------
 
@@ -261,7 +264,7 @@ class Scenario:
         else:
             self.show_layers = toggle
 
-    def draw_self(self, screen):
+    def draw(self, screen: pygame.Surface):
         display_size = self.map_size or self.display_size
         self.screen.blit(pygame.transform.scale(self.display, display_size), self.margin)
         screen.blit(self.screen, self.position)
@@ -310,21 +313,20 @@ class Scenario:
                     self.display.blit(tileset[c], (x * d, y * d))
     
     def draw_map(self):
-        map = self.map
         show_layers = self.show_layers
 
-        sx, sy = scroll = self.curr_scroll
+        sx, sy = self.curr_scroll
         w, h = self.width, self.height
         tile_size = self.map_tile_size
         xmin, ymin = sx * tile_size, sy * tile_size
         xmax, ymax = (w * tile_size) + sx, (h * tile_size) + sy
         area = (xmin, ymin, xmax, ymax)
 
-        self.display.fill(map.bgcolor)
+        self.display.fill(self.map.bgcolor)
         if self.bgimage_override:
             self.display.blit(self.bgimage_override, (0, 0), area = area)
-        elif map.bgimage:
-            self.display.blit(map.bgimage, (0, 0), area = area)
+        elif self.map.bgimage:
+            self.display.blit(self.map.bgimage, (0, 0), area = area)
 
         if show_layers & 0b0001:
             self.blit_tiles(1)
