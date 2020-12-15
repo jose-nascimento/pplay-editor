@@ -215,7 +215,13 @@ class Map:
     def set_bgimage(self, image: str):
         path = os.path.join(self.path, image)
         bgimage = pygame.image.load(path).convert_alpha()
+
+        self.background["image"] = image
         self.bgimage = bgimage
+
+    def unset_bgimage(self):
+        self.background["image"] = None
+        self.bgimage = None
 
     def set_tileset(self, tileset: str, limit: Optional[int] = None):
         self.tileset = tileset

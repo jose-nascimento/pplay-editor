@@ -4,7 +4,7 @@ from pygame.locals import *
 import pygame
 import tkinter
 from PPlayMaps import Map, Tileset, config as conf
-from PPlayMaps.types import Margin, Color, Vector, Vec
+from PPlayMaps.types import Margin, Vector, Vec
 from modules import Canvas, TileBar, Menu, Label, events as editor_events, utils
 config = conf.config
 active = config["active"]
@@ -182,7 +182,7 @@ def main():
     pygame.init()
     canvas, screen, current_size, screen_tile_size, margin = init_display()
     map, tileset, tile_bar, menu_label = init_assets(canvas, screen_tile_size, margin, current_size)
-    menu = Menu(height = 500, width = 500, title = "Menu Principal", canvas = canvas)
+    menu = Menu(height = 600, width = 500, title = "Menu Principal", canvas = canvas)
     menu.disable()
 
     # d = tileset.tile_size # delta
@@ -232,6 +232,9 @@ def main():
                 selected_tile = tile_bar.set_tileset(tileset)
             elif event.type == editor_events.SAVE_CHANGES:
                 map.save_map()
+            elif event.type == editor_events.EXPORT_PROJECT:
+                filepath = event.path
+                utils.export_project(filepath = filepath)
             elif menu.is_enabled():
                 pass
             elif event.type == pygame.KEYDOWN:

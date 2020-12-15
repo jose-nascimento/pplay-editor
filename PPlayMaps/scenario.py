@@ -206,6 +206,9 @@ class Scenario:
             image = pygame.image.load(path).convert_alpha()
             self.bgimage_override = image
 
+    def unset_bgimage(self):
+        self.map.unset_bgimage()
+
     def set_tileset(self, tileset_name: str) -> Tileset:
         tileset = Tileset.load(tileset_name)
         limit = len(tileset)
@@ -221,6 +224,9 @@ class Scenario:
         return tileset
 
     # ---------- End map manipulation ----------
+
+    def unset_bgimage_overrider(self):
+        self.bgimage_override = None
 
     def scroll(self, delta: Union[Vec, int], dy: Optional[int] = None) -> Vector:
         if type(delta) == int:
@@ -306,11 +312,19 @@ class Scenario:
     def draw_map(self):
         map = self.map
         show_layers = self.show_layers
+
+        sx, sy = scroll = self.curr_scroll
+        w, h = self.width, self.height
+        tile_size = self.map_tile_size
+        xmin, ymin = sx * tile_size, sy * tile_size
+        xmax, ymax = (w * tile_size) + sx, (h * tile_size) + sy
+        area = (xmin, ymin, xmax, ymax)
+
         self.display.fill(map.bgcolor)
         if self.bgimage_override:
-            self.display.blit(self.bgimage_override, (0, 0))
+            self.display.blit(self.bgimage_override, (0, 0), area = area)
         elif map.bgimage:
-            self.display.blit(map.bgimage, (0, 0))
+            self.display.blit(map.bgimage, (0, 0), area = area)
 
         if show_layers & 0b0001:
             self.blit_tiles(1)

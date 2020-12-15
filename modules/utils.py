@@ -1,11 +1,13 @@
 from typing import Optional
 from os import path, listdir, walk, mkdir
+from shutil import copyfile
 import configparser
 from PIL import Image
 from zipfile import ZipFile, ZIP_DEFLATED
 from PPlayMaps import Tileset, config as conf
 from PPlayMaps.types import Color
 config = conf.config
+active = config["active"]
 
 def list_projects():
     project_folder = config["active"].get("project_folder", "projects")
@@ -25,13 +27,16 @@ def get_filename(filepath: str):
     basename = path.basename(filepath)
     return path.splitext(basename)[0]
 
-def export_project(name: str, path: Optional[str] = None):
+def export_project(name: Optional[str] = None, filepath: Optional[str] = None):
+    if name is None:
+        name = active["active_project"]
+    if filepath is None:
+        filepath = path.join(filepath, f"{name}.zip")
+    
     project_folder = path.join("projects", name)
-    if path is None:
-        path = "."
-    filename = path.join(path, f"{name}.zip")
     export_folders = [("PPlayMaps", "."), ("tilesets", [project_folder]), ("maps", [project_folder])]
-    with ZipFile(filename, "w", ZIP_DEFLATED) as zip_file:
+
+    with ZipFile(filepath, "w", ZIP_DEFLATED) as zip_file:
         for folder, param in export_folders:
             rel = path.join(*param)
             location = path.join(rel, folder)
@@ -41,6 +46,18 @@ def export_project(name: str, path: Optional[str] = None):
                         dest = path.relpath(root, rel)
                         arcname = path.join(dest, file)
                         zip_file.write(path.join(root, file), arcname)
+
+def import_image(filepath: str, map_name: str) -> str:
+    if not path.isfile(filepath):
+        raise ValueError("filepath should be of a file")
+
+    filename = path.basename(filepath)
+    project_folder: str = config.default_folder()
+    save_folder = path.join(project_folder, "maps", map_name)
+
+    copyfile(filepath, path.join(save_folder, filename))
+
+    return filename
 
 def import_tileset(filepath: str, tile_size: int, name: Optional[str] = None) -> str:
     if not path.isfile(filepath):
