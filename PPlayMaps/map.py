@@ -23,13 +23,14 @@ class Map:
             width = 30,
             project = None,
             path = None,
-            background = {},
+            background = None,
             bgimage = None,
             **kwargs
         ):
         self.name = name
         self.height = height
         self.width = width
+        if background is None: background = {}
         self.background = background
         tileset = tileset
         bgcolor = background["background_color"] if "background_color" in background else (0, 0, 0)
@@ -40,6 +41,16 @@ class Map:
         self.path = path
         self.movement = movement if movement else self.init_layer()
         self.layers = layers if layers else [self.init_layer() for _ in range(4)]
+
+    def get_params(self) -> dict:
+        return {
+            "name": self.name,
+            "width": self.width,
+            "height": self.height,
+            "bgcolor": self.bgcolor,
+            "tileset": self.tileset,
+            "bgimage": self.background.get("image", None)
+        }
 
     def save_map(self):
         path = os.path.join(self.path, "map.json")
@@ -205,6 +216,16 @@ class Map:
         path = os.path.join(self.path, image)
         bgimage = pygame.image.load(path).convert_alpha()
         self.bgimage = bgimage
+
+    def set_tileset(self, tileset: str, limit: Optional[int] = None):
+        self.tileset = tileset
+
+        if limit is not None:
+            self.layers = [
+                [
+                    [tile if tile <= limit else 0 for tile in line] for line in layer
+                ] for layer in self.layers
+            ]
 
     def init_layer(self) -> List[List[int]]:
         w, h = self.height, self.width

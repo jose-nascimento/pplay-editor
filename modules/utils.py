@@ -5,6 +5,20 @@ from zipfile import ZipFile, ZIP_DEFLATED
 from PPlayMaps import Color, config as conf
 config = conf.config
 
+def list_projects():
+    project_folder = config["active"].get("project_folder", "projects")
+    return os.listdir(project_folder)
+
+def list_maps():
+    project_folder = config.default_folder()
+    map_folder = os.path.join(project_folder, "maps")
+    return os.listdir(map_folder)
+
+def list_tilesets():
+    project_folder = config.default_folder()
+    tileset_folder = os.path.join(project_folder, "tilesets")
+    return os.listdir(tileset_folder)
+
 def export_project(name: str, path: Optional[str] = None):
     project_folder = os.path.join("projects", name)
     if path is None:
@@ -47,3 +61,6 @@ def set_start_map(name: str, project: Optional[str] = None):
 def hex_to_rgb(hex: str) -> Color:
     h = hex.lstrip("#")
     return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+
+def rgb_to_hex(rgb: Color) -> str:
+    return f"{rgb[0]:02X}{rgb[1]:02X}{rgb[2]:02X}"

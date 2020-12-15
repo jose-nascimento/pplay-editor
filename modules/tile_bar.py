@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, Union
+from typing import Literal, Optional, Tuple, Union
 import pygame
 from PPlayMaps import Tileset, Vector
 
@@ -54,7 +54,7 @@ class TileBar:
         self.display = pygame.Surface((tile_size, length * tile_size))
         self.screen.fill((255, 255, 255))
 
-    def set_tileset(self, tileset: Tileset):
+    def set_tileset(self, tileset: Tileset) -> Literal[0]:
         self.tileset = tileset
         length = self.length
 
@@ -66,6 +66,8 @@ class TileBar:
         self.selected_tile = 0
 
         self.display = pygame.Surface((tile_size, length * tile_size))
+
+        return 0
 
     def __getitem__(self, key):
         return self.tileset[key]

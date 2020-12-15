@@ -197,6 +197,23 @@ class Scenario:
             image = pygame.image.load(path).convert_alpha()
             self.bgimage_override = image
 
+    def set_tileset(self, tileset_name: str) -> Tileset:
+        tileset = Tileset.load(tileset_name)
+        limit = len(tileset)
+
+        self.tileset = tileset
+        self.map_tile_size = tileset.tile_size
+
+        self.map.set_tileset(tileset_name, limit)
+        dimensions = self.calc_map_size()
+
+        self.display = pygame.Surface(dimensions)
+
+        return tileset
+
+    def get_map_params(self) -> dict:
+        return self.map.get_params()
+
     # ---------- End map manipulation ----------
 
     def scroll(self, delta: Union[Vector, int], dy: Optional[int] = None):

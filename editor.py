@@ -207,8 +207,8 @@ def main():
     pygame.init()
     canvas, screen, current_size, screen_tile_size, margin = init_display()
     map, tileset, tile_bar, menu_label = init_assets(canvas, screen_tile_size, margin, current_size)
-    menu = Menu(height = 400, width = 400, title = "Menu Principal")
-    # menu.disable()
+    menu = Menu(height = 400, width = 400, title = "Menu Principal", canvas = canvas)
+    menu.disable()
 
     d = tileset.tile_size # delta
     x, y = pygame.mouse.get_pos()
@@ -247,8 +247,16 @@ def main():
                 if resize_count > 1: handle_resize(canvas, tile_bar, menu_label)
             elif event.type == editor_events.CHANGE_PROJECT:
                 map, tileset = load_project(event.project, canvas, tile_bar)
+                selected_tile = 0
             elif event.type == editor_events.CHANGE_MAP:
                 map, tileset = load_map(event.map, canvas, tile_bar)
+                selected_tile = 0
+            elif event.type == editor_events.CHANGE_TILESET:
+                tileset_name = event.tileset
+                tileset = canvas.set_tileset(tileset_name)
+                selected_tile = tile_bar.set_tileset(tileset)
+            elif event.type == editor_events.SAVE_CHANGES:
+                map.save_map()
             elif menu.is_enabled():
                 pass
             elif event.type == pygame.KEYDOWN:

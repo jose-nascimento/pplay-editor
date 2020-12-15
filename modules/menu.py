@@ -1,28 +1,18 @@
 from os import path
+from typing import List, Optional, Tuple
 import pygame
 import pygame_menu
 import os
 from PPlayMaps import Map, config as conf
-from modules import events, utils
+from modules import Canvas, events, utils
 config = conf.config
 active = config["active"]
 
-def test():
-    print("test")
-
-def list_projects():
-    project_folder = config["active"].get("project_folder", "projects")
-    return os.listdir(project_folder)
-
-def list_maps():
-    project_folder = config.default_folder()
-    map_folder = os.path.join(project_folder, "maps")
-    return os.listdir(map_folder)
-
-def list_tilesets():
-    project_folder = config.default_folder()
-    tileset_folder = os.path.join(project_folder, "tilesets")
-    return os.listdir(tileset_folder)
+def tileset_index(tilesets, tileset_name) -> int:
+    for i, (title, name) in enumerate(tilesets):
+        if name == tileset_name:
+            return i
+    return 0
 
 class _ProjectMenu(pygame_menu.Menu):
 
@@ -38,14 +28,13 @@ class _ProjectMenu(pygame_menu.Menu):
         self.update_choices()
 
     def open_project(self, name):
-        self.main_menu.full_reset()
-        self.main_menu._close()
         event = pygame.event.Event(events.CHANGE_PROJECT, project = name)
-        pygame.event.post(event)
+
+        self.main_menu.open_save_prompt([event])
 
     def update_choices(self):
         self.clear()
-        projects = list_projects()
+        projects = utils.list_projects()
         for project in projects:
             self.add_button(project, self.open_project, project)
 
@@ -63,52 +52,83 @@ class _MapSelectionMenu(pygame_menu.Menu):
         self.update_choices()
 
     def open_map(self, name):
-        self.main_menu.full_reset()
-        self.main_menu._close()
         event = pygame.event.Event(events.CHANGE_MAP, map = name)
-        pygame.event.post(event)
+
+        self.main_menu.open_save_prompt([event])
 
     def update_choices(self):
         self.clear()
-        maps = list_maps()
+        maps = utils.list_maps()
         for map in maps:
             self.add_button(map, self.open_map, map)
 
 
 class Menu(pygame_menu.Menu):
 
-    def __init__(self, height, width, title, **kwargs) -> None:
+    def __init__(self, height, width, title, canvas: Optional[Canvas] = None, **kwargs) -> None:
         super().__init__(height, width, title, **kwargs)
 
         self._onclose = self.disable
         self.defer = None
+        self.event_queue = []
+        self.canvas = canvas
 
         self.project_menu = project_menu = _ProjectMenu(self, height, width)
         self.map_selection_menu = map_selection_menu = _MapSelectionMenu(self, height, width)
+        self.map_creation_menu = map_creation_menu =  self.create_map_menu("Novo mapa", height, width)
+        self.save_prompt = save_prompt = pygame_menu.Menu(
+            250, 750, "Salvar", columns = 2, rows = 3, center_content = False
+        )
+
         self.add_button("Selecionar Projeto", project_menu)
         self.add_button("Novo Projeto", self.create_project_menu(height, width))
         self.add_button("Selecionar Mapa", map_selection_menu)
-        self.add_button("Editar Mapa", test)
-        self.add_button("Novo Mapa", self.create_map_menu(height, width))
+        if canvas is not None:
+            self.add_button("Editar Mapa", self.map_edit_menu)
+        self.add_button("Novo Mapa", map_creation_menu)
         self.add_button("Sair", pygame_menu.events.EXIT)
 
-    def update_tilesets(self):
-        tilesets = [("", None)] + [(ts, ts) for ts in list_tilesets()]
+        save_prompt.add_label("Salvar alterações?", align = pygame_menu.locals.ALIGN_LEFT)
+        save_prompt.add_vertical_margin(50)
+        save_prompt.add_button(" Sim", self.post_save_event, align = pygame_menu.locals.ALIGN_LEFT)
+        save_prompt.add_vertical_margin(50)
+        save_prompt.add_vertical_margin(50)
+        save_prompt.add_button("Não ", self.close_prompt, align = pygame_menu.locals.ALIGN_RIGHT)
+
+    def post_save_event(self):
+        event = pygame.event.Event(events.SAVE_CHANGES)
+        pygame.event.post(event)
+
+        self.close_prompt()
+
+    def close_prompt(self):
+        for event in self.event_queue:
+            pygame.event.post(event)
+
+        self.full_reset()
+        self._close()
+
+    def open_save_prompt(self, events: List[pygame.event.Event] = []):
+        self.event_queue.extend(events)
+        self._open(self.save_prompt)
+
+    def update_tilesets(self, tilesets: Optional[List[Tuple[str, Optional[str]]]] = None):
+        if tilesets is None:
+            tilesets = [("", None)] + [(ts, ts) for ts in utils.list_tilesets()]
+        
         self.tileset_selector.update_elements(tilesets)
 
     def create_map_fn(self):
-        events_queue = []
-        data = self.create_map_menu.get_input_data()
+        data = self.map_creation_menu.get_input_data()
 
         map_name = data["map_name"]
         map_width = data["map_width"]
         map_height = data["map_height"]
         map_tileset = data["map_tileset"][0]
+        if map_tileset == "": map_tileset = None
         map_color = data["map_bgcolor"]
 
-        if self.defer is not None:
-            ev = self.defer(map_name)
-            events_queue.append(ev)
+        if self.defer is not None: self.defer(map_name)
 
         project_folder = config.default_folder()
         map_path = os.path.join(project_folder, "maps", map_name)
@@ -123,14 +143,42 @@ class Menu(pygame_menu.Menu):
         )
 
         map.save_map()
-        self.full_reset()
-        self._close()
         self.map_selection_menu.update_choices()
 
-        events_queue.append(pygame.event.Event(events.CHANGE_MAP, map = map_name))
+        event = pygame.event.Event(events.CHANGE_MAP, map = map_name)
+        self.event_queue.append(event)
 
-        for event in events_queue:
-            pygame.event.post(event)
+        self.open_save_prompt()
+
+    def edit_map_fn(self):
+        data = self.edit_menu.get_input_data()
+        params = self.map_params
+
+        self.edit_menu = None
+        self.map_params = None
+
+        map_width = data["map_width"]
+        map_height = data["map_height"]
+        map_tileset = data["map_tileset"][0]
+        if map_tileset == "": map_tileset = None
+        map_color = data["map_bgcolor"]
+        map_size = (map_width, map_height)
+
+        old_width = params["width"]
+        old_height = params["height"]
+        old_tileset = params["tileset"]
+        old_color = params["bgcolor"]
+        old_size = (old_width, old_height)
+
+        if map_size != old_size:
+            self.canvas.resize(map_size)
+        if map_tileset != old_tileset:
+            event = pygame.event.Event(events.CHANGE_TILESET, tileset = map_tileset)
+            self.event_queue.append(event)
+        if map_color != old_color:
+            self.canvas.set_bgcolor(map_color)
+        
+        self.close_prompt()        
 
     def create_project_fn(self, project_name: str, map_name: str):
         data = self.create_project_menu.get_input_data()
@@ -138,14 +186,15 @@ class Menu(pygame_menu.Menu):
 
         utils.create_project(project_name, map_name = map_name)
 
-        active["active_project"] = project_name
         event = pygame.event.Event(events.CHANGE_PROJECT, project = project_name)
+        self.event_queue.append(event)
 
-        return event
-
-    def create_project_defer(self):
+    def create_project_defer(self, *args):
         data = self.create_project_menu.get_input_data()
         project_name = data["project_name"]
+
+        active["active_project"] = project_name
+        self.update_tilesets([("", None)])
         self.defer = lambda map_name: self.create_project_fn(project_name, map_name)
 
         self._open(self.create_map_menu)
@@ -157,6 +206,7 @@ class Menu(pygame_menu.Menu):
         menu.add_text_input(
             "Nome do projeto: ",
             textinput_id = "project_name",
+            onreturn = self.create_project_defer,
             align = pygame_menu.locals.ALIGN_LEFT
         )
         menu.add_vertical_margin(150)
@@ -172,34 +222,37 @@ class Menu(pygame_menu.Menu):
 
         return menu
     
-    def create_map_menu(self, height, width):
-        self.create_map_menu = menu = pygame_menu.Menu(
-            500, 800, "Novo mapa", center_content = False
+    def create_map_menu(
+            self, title, height, width, defaults: dict = {}, mode: str = "new"
+        ) -> pygame_menu.Menu:
+        menu = pygame_menu.Menu(
+            500, 800, title, center_content = False
         )
-
-        hex_chars = [f"{x:01x}" for x in range(16)] + [f"{x:01X}" for x in range(16)]
-        tilesets = [("", None)] + [(ts, ts) for ts in list_tilesets()]
+        tilesets: List[Tuple[str, Optional[str]]] = [("", None)] + [
+            (ts, ts) for ts in utils.list_tilesets()
+        ]
 
         menu.add_text_input(
             "Nome do mapa: ",
             textinput_id = "map_name",
+            default = defaults.get("name", ""),
             align = pygame_menu.locals.ALIGN_LEFT
         )
         menu.add_text_input(
             "Largura: ",
             textinput_id = "map_width",
-            default = 30,
             maxchar = 3,
             maxwidth = 3,
+            default = defaults.get("width", 30),
             input_type = pygame_menu.locals.INPUT_INT,
             align = pygame_menu.locals.ALIGN_LEFT
         )
         menu.add_text_input(
             "Altura: ",
             textinput_id = "map_height",
-            default = 16,
             maxchar = 3,
             maxwidth = 3,
+            default = defaults.get("height", 16),
             input_type = pygame_menu.locals.INPUT_INT,
             align = pygame_menu.locals.ALIGN_LEFT
         )
@@ -207,21 +260,36 @@ class Menu(pygame_menu.Menu):
             "Cor de fundo: ",
             color_id = "map_bgcolor",
             color_type = "hex",
-            default = "#000000",
+            default = utils.rgb_to_hex(defaults.get("bgcolor", (0, 0, 0))),
             align = pygame_menu.locals.ALIGN_LEFT
         )
+        map_tileset = defaults.get("tileset", None)
+        default_tileset = tileset_index(tilesets, map_tileset)
         tileset_selector = menu.add_selector(
             "Selecione o tileset",
             tilesets,
             selector_id = "map_tileset",
-            default = 0,
+            default = default_tileset,
             align = pygame_menu.locals.ALIGN_LEFT
         )
-        self.tileset_selector = tileset_selector
+
         menu.add_vertical_margin(50)
-        menu.add_button("Criar mapa", self.create_map_fn)
+
+        if mode == "new":
+            menu.add_button("Criar mapa", self.create_map_fn)
+            self.tileset_selector = tileset_selector
+        else:
+            menu.add_button("Aplicar mudanças", self.edit_map_fn)
+        
         menu.add_button(
             "Voltar ao menu principal", pygame_menu.events.BACK, align = pygame_menu.locals.ALIGN_CENTER
         )
 
         return menu
+    
+    def map_edit_menu(self):
+        self.map_params = params = self.canvas.get_map_params()
+        self.edit_menu = edit_menu = self.create_map_menu(
+            "Editar mapa", 500, 800, defaults = params, mode = "edit"
+        )
+        self._open(edit_menu)
