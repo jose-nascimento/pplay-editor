@@ -6,6 +6,7 @@ pip install -r requirements.txt
 python editor.py
 
 Uso:
+Menu principal: [ESC]
 Trocar layer: teclas 1 - 4
 Editar moviment: M
 Esconder layer atual: H

@@ -1,6 +1,12 @@
 # local
 .vscode
-trash/
+trash
+
+# Project
+projects/*
+!projects/default
+projects/default/maps/*
+!projects/default/maps/map00
 
 # Python
 __pycache__/
