@@ -182,10 +182,10 @@ def main():
     pygame.init()
     canvas, screen, current_size, screen_tile_size, margin = init_display()
     map, tileset, tile_bar, menu_label = init_assets(canvas, screen_tile_size, margin, current_size)
-    menu = Menu(height = 500, width = 400, title = "Menu Principal", canvas = canvas)
+    menu = Menu(height = 500, width = 500, title = "Menu Principal", canvas = canvas)
     menu.disable()
 
-    d = tileset.tile_size # delta
+    # d = tileset.tile_size # delta
     x, y = pygame.mouse.get_pos()
     resize_count = 0
     selected_tile = tile_bar.selected_tile
@@ -355,6 +355,7 @@ def main():
         
         if (mouse_left_pressed or mouse_right_pressed) and mode == 2:
             mx, my = canvas.get_xy()
+            d = tileset.tile_size
             px, py = drag_position
             if px > mx:
                 px, mx = mx, px

@@ -1,59 +1,99 @@
-import os
-import configparser
 from typing import Optional
+from os import path, listdir, walk, mkdir
+import configparser
+from PIL import Image
 from zipfile import ZipFile, ZIP_DEFLATED
-from PPlayMaps import config as conf
+from PPlayMaps import Tileset, config as conf
 from PPlayMaps.types import Color
 config = conf.config
 
 def list_projects():
     project_folder = config["active"].get("project_folder", "projects")
-    return os.listdir(project_folder)
+    return listdir(project_folder)
 
 def list_maps():
     project_folder = config.default_folder()
-    map_folder = os.path.join(project_folder, "maps")
-    return os.listdir(map_folder)
+    map_folder = path.join(project_folder, "maps")
+    return listdir(map_folder)
 
 def list_tilesets():
     project_folder = config.default_folder()
-    tileset_folder = os.path.join(project_folder, "tilesets")
-    return os.listdir(tileset_folder)
+    tileset_folder = path.join(project_folder, "tilesets")
+    return listdir(tileset_folder)
+
+def get_filename(filepath: str):
+    basename = path.basename(filepath)
+    return path.splitext(basename)[0]
 
 def export_project(name: str, path: Optional[str] = None):
-    project_folder = os.path.join("projects", name)
+    project_folder = path.join("projects", name)
     if path is None:
         path = "."
-    filename = os.path.join(path, f"{name}.zip")
+    filename = path.join(path, f"{name}.zip")
     export_folders = [("PPlayMaps", "."), ("tilesets", [project_folder]), ("maps", [project_folder])]
     with ZipFile(filename, "w", ZIP_DEFLATED) as zip_file:
         for folder, param in export_folders:
-            rel = os.path.join(*param)
-            location = os.path.join(rel, folder)
-            for root, dirs, files in os.walk(location):
+            rel = path.join(*param)
+            location = path.join(rel, folder)
+            for root, dirs, files in walk(location):
                 if not "__pycache__" in root:
                     for file in files:
-                        dest = os.path.relpath(root, rel)
-                        arcname = os.path.join(dest, file)
-                        zip_file.write(os.path.join(root, file), arcname)
+                        dest = path.relpath(root, rel)
+                        arcname = path.join(dest, file)
+                        zip_file.write(path.join(root, file), arcname)
+
+def import_tileset(filepath: str, tile_size: int, name: Optional[str] = None) -> str:
+    if not path.isfile(filepath):
+        raise ValueError("filepath should be of a file")
+
+    if name is None:
+        name = get_filename(filepath)
+    
+    project_folder: str = config.default_folder()
+    save_folder = path.join(project_folder, "tilesets", name)
+    
+    image = Image.open(filepath)
+    mkdir(save_folder)
+
+    width, height = image.size
+    xmax, ymax = width // tile_size, height // tile_size
+
+    for i in range(0, ymax):
+        for j in range(0, xmax):
+            x, y = j * tile_size, i * tile_size
+            cropbox = (x, y, x + tile_size, y + tile_size)
+            n = (i * xmax) + j
+            try:
+                tile = image.crop(cropbox)
+                tile.save(path.join(save_folder, f"{n:02d}.png"))
+            except OSError as ose:
+                print(f"Couldn't write tile {n:02d} to file")
+                print(ose)
+            except:
+                print(f"Couldn't crop or save tile {n:02d}")
+    
+    tileset = Tileset(name, tiles = [], tile_size = tile_size, path = save_folder)
+    tileset.save()
+
+    return name
 
 def create_project(name: str, map_name: str):
     project_folder = config.default_folder(name)
-    os.mkdir(project_folder)
-    map_folder = os.path.join(project_folder, "maps")
-    tileset_folder = os.path.join(project_folder, "tilesets")
-    os.mkdir(map_folder)
-    os.mkdir(tileset_folder)
+    mkdir(project_folder)
+    map_folder = path.join(project_folder, "maps")
+    tileset_folder = path.join(project_folder, "tilesets")
+    mkdir(map_folder)
+    mkdir(tileset_folder)
     project_config = configparser.ConfigParser()
     project_config.add_section("active")
     project_config.set("active", "start_map", map_name)
-    with open(os.path.join(project_folder, "project.ini"), "w") as configfile:
+    with open(path.join(project_folder, "project.ini"), "w") as configfile:
         project_config.write(configfile)
 
 def set_start_map(name: str, project: Optional[str] = None):
     project_config = configparser.ConfigParser()
     project_folder = config.default_folder(project)
-    config_path = os.path.join(project_folder, "project.ini")
+    config_path = path.join(project_folder, "project.ini")
     project_config.read(config_path)
     project_config["active"]["start_map"] = name
     with open(config_path, "w") as configfile:

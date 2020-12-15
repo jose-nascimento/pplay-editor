@@ -1,8 +1,8 @@
-from os import path
 from typing import List, Optional, Tuple
 import pygame
-from tkinter.filedialog import asksaveasfile, asksaveasfilename
+from tkinter.filedialog import asksaveasfilename, askopenfilename
 import pygame_menu
+from pygame_menu.widgets import TextInput, Selector
 import os
 from PPlayMaps import Map, config as conf
 from modules import Canvas, events, utils
@@ -73,6 +73,9 @@ class Menu(pygame_menu.Menu):
         self.defer = None
         self.event_queue = []
         self.canvas = canvas
+        self.tile_size_list = [
+            ("16x16", 16), ("20x20", 20), ("32x32", 32), ("48x48", 48), ("64x64", 64)
+        ]
 
         self.project_menu = project_menu = _ProjectMenu(self, height, width)
         self.map_selection_menu = map_selection_menu = _MapSelectionMenu(self, height, width)
@@ -80,6 +83,7 @@ class Menu(pygame_menu.Menu):
         self.save_prompt = save_prompt = pygame_menu.Menu(
             250, 750, "Salvar", columns = 2, rows = 3, center_content = False
         )
+        self.tileset_import_menu = tileset_import_menu = self.import_tileset_menu(height, width)
 
         self.add_button("Selecionar Projeto", project_menu)
         self.add_button("Novo Projeto", self.create_project_menu(height, width))
@@ -88,6 +92,7 @@ class Menu(pygame_menu.Menu):
             self.add_button("Editar Mapa", self.map_edit_menu)
         self.add_button("Novo Mapa", map_creation_menu)
         self.add_button("Exportar como imagem", self.ask_save)
+        self.add_button("Importar tileset", tileset_import_menu)
         self.add_button("Sair", pygame_menu.events.EXIT)
 
         save_prompt.add_label("Salvar alterações?", align = pygame_menu.locals.ALIGN_LEFT)
@@ -229,6 +234,81 @@ class Menu(pygame_menu.Menu):
         )
 
         return menu
+
+    def import_tileset_fn(self):
+        data = self.tileset_import_menu.get_input_data()
+
+        tileset_name = data["tileset_name"]
+        tileset_path = data["tileset_path"]
+        tile_size_index = data["tile_size"][1]
+        tile_size = self.tile_size_list[tile_size_index][1]
+
+        tileset_name = utils.import_tileset(tileset_path, tile_size, name = tileset_name)
+        self.update_tilesets()
+
+        self._back()
+
+    def tileset_dialog(self, path_input: TextInput, name_input: Optional[TextInput] = None):
+        value = path_input.get_value()
+        initialfile = value or None
+        filepath = askopenfilename(
+            initialfile = initialfile,
+            filetypes = [
+                (
+                    "Arquivos de Imagem",
+                    (".png", ".jpg", ".bmp", ".tiff", ".webp")
+                )
+            ]
+        )
+
+        if filepath:
+            path_input.set_value(filepath)
+            if name_input and not name_input.get_value():
+                name = utils.get_filename(filepath)
+                name_input.set_value(name)            
+
+    def import_tileset_menu(self, height, width):
+        menu = pygame_menu.Menu(
+            height, width, "Importar tileset", center_content = False
+        )
+
+        tileset_name = menu.add_text_input(
+            "Nome do tileset: ",
+            textinput_id = "tileset_name",
+            align = pygame_menu.locals.ALIGN_LEFT
+        )
+        tileset_path = menu.add_text_input(
+            "Arquivo: ",
+            textinput_id = "tileset_path",
+            maxwidth = 10,
+            align = pygame_menu.locals.ALIGN_LEFT
+        )
+        menu.add_button(
+            "Abrir arquivo",
+            self.tileset_dialog,
+            tileset_path,
+            tileset_name,
+            align = pygame_menu.locals.ALIGN_LEFT
+        )
+        menu.add_selector(
+            "Tamanho dos tiles: ",
+            self.tile_size_list,
+            selector_id = "tile_size",
+            align = pygame_menu.locals.ALIGN_LEFT
+        )
+
+        menu.add_button(
+            "Importar",
+            self.import_tileset_fn,
+            align = pygame_menu.locals.ALIGN_CENTER
+        )
+        menu.add_button(
+            "Voltar ao menu principal",
+            pygame_menu.events.BACK,
+            align = pygame_menu.locals.ALIGN_CENTER
+        )
+
+        return menu
     
     def create_map_menu(
             self, title, height, width, defaults: dict = {}, mode: str = "new"
@@ -290,7 +370,9 @@ class Menu(pygame_menu.Menu):
             menu.add_button("Aplicar mudanças", self.edit_map_fn)
         
         menu.add_button(
-            "Voltar ao menu principal", pygame_menu.events.BACK, align = pygame_menu.locals.ALIGN_CENTER
+            "Voltar ao menu principal",
+            pygame_menu.events.BACK,
+            align = pygame_menu.locals.ALIGN_CENTER
         )
 
         return menu
