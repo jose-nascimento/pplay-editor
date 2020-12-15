@@ -28,7 +28,7 @@ class _ProjectMenu(pygame_menu.Menu):
         self.main_menu = main_menu
         self.update_choices()
 
-    def open_project(self, name):
+    def open_project(self, name: str):
         event = pygame.event.Event(events.CHANGE_PROJECT, project = name)
 
         self.main_menu.open_save_prompt([event])
@@ -52,7 +52,7 @@ class _MapSelectionMenu(pygame_menu.Menu):
         self.main_menu = main_menu
         self.update_choices()
 
-    def open_map(self, name):
+    def open_map(self, name: str):
         event = pygame.event.Event(events.CHANGE_MAP, map = name)
 
         self.main_menu.open_save_prompt([event])
@@ -66,7 +66,9 @@ class _MapSelectionMenu(pygame_menu.Menu):
 
 class Menu(pygame_menu.Menu):
 
-    def __init__(self, height, width, title, canvas: Optional[Canvas] = None, **kwargs) -> None:
+    def __init__(
+        self, height: int, width: int, title: str, canvas: Optional[Canvas] = None, **kwargs
+        ):
         super().__init__(height, width, title, **kwargs)
 
         self._onclose = self.disable
@@ -231,7 +233,7 @@ class Menu(pygame_menu.Menu):
         
         self.close_prompt()        
 
-    def help_menu(self, height, width):
+    def help_menu(self, height: int, width: int):
         menu = pygame_menu.Menu(
             700, 800, "Ajuda", center_content = False
         )
@@ -317,9 +319,9 @@ class Menu(pygame_menu.Menu):
         self.update_tilesets([("", None)])
         self.defer = lambda map_name: self.create_project_fn(project_name, map_name)
 
-        self._open(self.create_map_menu)
+        self._open(self.map_creation_menu)
     
-    def create_project_menu(self, height, width):
+    def create_project_menu(self, height: int, width: int):
         self.create_project_menu = menu = pygame_menu.Menu(
             height, 800, "Novo projeto", center_content = False
         )
@@ -390,7 +392,7 @@ class Menu(pygame_menu.Menu):
                 name = utils.get_filename(filepath)
                 name_input.set_value(name)      
 
-    def import_tileset_menu(self, height, width):
+    def import_tileset_menu(self, height: int, width: int):
         menu = pygame_menu.Menu(
             height, width, "Importar tileset", center_content = False
         )
@@ -434,7 +436,7 @@ class Menu(pygame_menu.Menu):
         return menu
     
     def create_map_menu(
-            self, title, height, width, defaults: dict = {}, mode: str = "new"
+            self, title: str, height: int, width: int, defaults: dict = {}, mode: str = "new"
         ) -> pygame_menu.Menu:
         menu = pygame_menu.Menu(
             650, 800, title, center_content = False

@@ -15,7 +15,9 @@ def get_positions(margin: Margin) -> Tuple[Vector, Vector]:
 
     return tilebar_position, label_position
 
-def label_text(layer: int = 0, mode: int = 0, movement_layer: bool = False) -> str:
+def label_text(
+        layer: int = 0, mode: int = 0, movement_layer: bool = False, map_name: str = " "
+    ) -> str:
     layer_label = ["1", "2", "3", "4", "Movimento (M)"]
     if movement_layer:
         layer_label[-1] = f"[{layer_label[-1]}]"
@@ -24,7 +26,10 @@ def label_text(layer: int = 0, mode: int = 0, movement_layer: bool = False) -> s
     mode_label = ["L", "- Lápis |", "A", "- Área |", "B", "- Balde de Tinta |"]
     if mode:
         mode_label[(mode - 1) * 2] = f"[{mode_label[(mode - 1) * 2]}]"
-    return f"Camada: {' '.join(layer_label)} | Esconder/Mostrar - H | Somente atual - T | {' '.join(mode_label)}"
+    layer_text = f"Camada: {' '.join(layer_label)}"
+    mode_text = ' '.join(mode_label)
+    map_text = f"Mapa: {map_name}"
+    return f"{map_text} | {layer_text} | Esconder/Mostrar - H | Somente atual - T | {mode_text}"
 
 def load_map(name: str, canvas: Canvas, tile_bar: TileBar) -> Tuple[Map, Tileset]:
     map = Map.load(name)
@@ -40,9 +45,12 @@ def load_map(name: str, canvas: Canvas, tile_bar: TileBar) -> Tuple[Map, Tileset
 def load_project(name: str, canvas: Canvas, tile_bar: TileBar) -> Tuple[Map, Tileset]:
     active["active_project"] = name
     project_path = config.default_folder(name)
+
     config.read(os.path.join(project_path, "project.ini"))
     config.write_changes()
+
     map_name = active["start_map"]
+    pygame.display.set_caption(f"{name} - PPlayEditor")
 
     return load_map(map_name, canvas, tile_bar)
 
@@ -56,6 +64,7 @@ def init_assets(
 ) -> Tuple[Map, Tileset, TileBar, Label]:
     if project is not None:
         active["active_project"] = project
+    project_name = active["active_project"]
     project_path = config.default_folder(project)
     config.read(os.path.join(project_path, "project.ini"))
     if map_name == None:
@@ -69,9 +78,10 @@ def init_assets(
     tilebar_position, label_position = get_positions(margin)
 
     tile_bar = TileBar(tileset, tilebar_position, screen_size, tile_size)
-    menu_label = Label(label_text(), label_position)
+    menu_label = Label(label_text(map_name = map_name), label_position)
 
     canvas.set_map(map, tileset)
+    pygame.display.set_caption(f"{project_name} - PPlayEditor")
 
     return map, tileset, tile_bar, menu_label
 
@@ -112,6 +122,7 @@ def init_display() -> Tuple[Canvas, pygame.Surface, Vector, Vector, Margin]:
     screen_size = active.get("screen_size", None)
 
     pygame.display.init()
+    pygame.display.set_caption("PPlayEditor")
 
     if screen_size is None:
         info = pygame.display.Info()
@@ -204,7 +215,7 @@ def main():
     clock = pygame.time.Clock()
     loop = True
     while loop:
-        menu_label.set(label_text(layer, mode, movement_layer))
+        menu_label.set(label_text(layer, mode, movement_layer, map.name))
         screen.fill((128, 128, 128))
         canvas.draw_map()
         if movement_layer: canvas.blit_movement()
