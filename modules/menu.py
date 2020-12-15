@@ -19,6 +19,11 @@ def list_maps():
     map_folder = os.path.join(project_folder, "maps")
     return os.listdir(map_folder)
 
+def list_tilesets():
+    project_folder = config.default_folder()
+    tileset_folder = os.path.join(project_folder, "tilesets")
+    return os.listdir(tileset_folder)
+
 class _ProjectMenu(pygame_menu.Menu):
 
     def __init__(self, main_menu, height, width, **kwargs):
@@ -74,7 +79,10 @@ class Menu(pygame_menu.Menu):
 
     def __init__(self, height, width, title, **kwargs) -> None:
         super().__init__(height, width, title, **kwargs)
+
         self._onclose = self.disable
+        self.defer = None
+
         self.project_menu = project_menu = _ProjectMenu(self, height, width)
         self.map_selection_menu = map_selection_menu = _MapSelectionMenu(self, height, width)
         self.add_button("Selecionar Projeto", project_menu)
@@ -84,6 +92,10 @@ class Menu(pygame_menu.Menu):
         self.add_button("Novo Mapa", self.create_map_menu(height, width))
         self.add_button("Sair", pygame_menu.events.EXIT)
 
+    def update_tilesets(self):
+        tilesets = [("", None)] + [(ts, ts) for ts in list_tilesets()]
+        self.tileset_selector.update_elements(tilesets)
+
     def create_map_fn(self):
         events_queue = []
         data = self.create_map_menu.get_input_data()
@@ -91,7 +103,8 @@ class Menu(pygame_menu.Menu):
         map_name = data["map_name"]
         map_width = data["map_width"]
         map_height = data["map_height"]
-        map_color = utils.hex_to_rgb(data["map_bgcolor"])
+        map_tileset = data["map_tileset"][0]
+        map_color = data["map_bgcolor"]
 
         if self.defer is not None:
             ev = self.defer(map_name)
@@ -105,6 +118,7 @@ class Menu(pygame_menu.Menu):
             height = map_height,
             width = map_width,
             path = map_path,
+            tileset = map_tileset,
             background = { "background_color": map_color }
         )
 
@@ -138,31 +152,73 @@ class Menu(pygame_menu.Menu):
     
     def create_project_menu(self, height, width):
         self.create_project_menu = menu = pygame_menu.Menu(
-            height, width, "Novo projeto", center_content = False
+            height, 800, "Novo projeto", center_content = False
         )
-        menu.add_text_input("Nome do projeto: ", textinput_id = "project_name", align = pygame_menu.locals.ALIGN_LEFT)
-        menu.add_button("Criar projeto", self.create_project_defer, align = pygame_menu.locals.ALIGN_LEFT)
+        menu.add_text_input(
+            "Nome do projeto: ",
+            textinput_id = "project_name",
+            align = pygame_menu.locals.ALIGN_LEFT
+        )
+        menu.add_vertical_margin(150)
         menu.add_button(
-            "Voltar ao menu principal", pygame_menu.events.BACK, align = pygame_menu.locals.ALIGN_CENTER
+            "Criar projeto",
+            self.create_project_defer,
+        )
+        menu.add_button(
+            "Voltar ao menu principal",
+            pygame_menu.events.BACK,
+            align = pygame_menu.locals.ALIGN_CENTER
         )
 
         return menu
     
     def create_map_menu(self, height, width):
         self.create_map_menu = menu = pygame_menu.Menu(
-            height, width, "Novo mapa", center_content = False
+            500, 800, "Novo mapa", center_content = False
         )
+
         hex_chars = [f"{x:01x}" for x in range(16)] + [f"{x:01X}" for x in range(16)]
-        menu.add_text_input("Nome do mapa: ", textinput_id = "map_name")
+        tilesets = [("", None)] + [(ts, ts) for ts in list_tilesets()]
+
         menu.add_text_input(
-            "Largura: ", textinput_id = "map_width", default = 30, maxchar = 3, maxwidth = 3, input_type = pygame_menu.locals.INPUT_INT
+            "Nome do mapa: ",
+            textinput_id = "map_name",
+            align = pygame_menu.locals.ALIGN_LEFT
         )
         menu.add_text_input(
-            "Altura: ", textinput_id = "map_height", default = 16, maxchar = 3, maxwidth = 3, input_type = pygame_menu.locals.INPUT_INT
+            "Largura: ",
+            textinput_id = "map_width",
+            default = 30,
+            maxchar = 3,
+            maxwidth = 3,
+            input_type = pygame_menu.locals.INPUT_INT,
+            align = pygame_menu.locals.ALIGN_LEFT
         )
         menu.add_text_input(
-            "Cor: #", textinput_id = "map_bgcolor", default = "000000", maxchar = 6, maxwidth = 6, valid_chars = hex_chars
+            "Altura: ",
+            textinput_id = "map_height",
+            default = 16,
+            maxchar = 3,
+            maxwidth = 3,
+            input_type = pygame_menu.locals.INPUT_INT,
+            align = pygame_menu.locals.ALIGN_LEFT
         )
+        menu.add_color_input(
+            "Cor de fundo: ",
+            color_id = "map_bgcolor",
+            color_type = "hex",
+            default = "#000000",
+            align = pygame_menu.locals.ALIGN_LEFT
+        )
+        tileset_selector = menu.add_selector(
+            "Selecione o tileset",
+            tilesets,
+            selector_id = "map_tileset",
+            default = 0,
+            align = pygame_menu.locals.ALIGN_LEFT
+        )
+        self.tileset_selector = tileset_selector
+        menu.add_vertical_margin(50)
         menu.add_button("Criar mapa", self.create_map_fn)
         menu.add_button(
             "Voltar ao menu principal", pygame_menu.events.BACK, align = pygame_menu.locals.ALIGN_CENTER
