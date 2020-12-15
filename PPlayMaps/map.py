@@ -1,12 +1,11 @@
-from typing import List, Literal, Optional, Union
-
+from typing import List, Literal, Optional
 from pygame.locals import Color
-from PPlayMaps.types import Vector
 import json
 import os
 from PIL import Image
 import pygame
 from PPlayMaps import Tileset, config as conf
+from PPlayMaps.types import Vector, Vec
 from .helpers import add_v, clamp, sub_v
 config = conf.config
 active = config["active"]
@@ -15,16 +14,16 @@ class Map:
 
     def __init__(
             self,
-            name,
-            layers = None,
-            movement = None,
-            tileset = None,
-            height = 16,
-            width = 30,
-            project = None,
-            path = None,
-            background = None,
-            bgimage = None,
+            name: str,
+            layers: List[List[List[int]]] = None,
+            movement: List[List[int]] = None,
+            tileset: str = None,
+            height: int = 16,
+            width: int = 30,
+            project: str = None,
+            path: str = None,
+            background: dict = None,
+            bgimage: pygame.Surface = None,
             **kwargs
         ):
         self.name = name
@@ -101,7 +100,7 @@ class Map:
     def size(self) -> Vector:
         return Vector(self.width, self.height)
     
-    def export(self, project: Optional[str] = None):
+    def export_image(self, path: str, project: Optional[str] = None):
         tileset_name = self.tileset
         tileset = Tileset.load(name = tileset_name, project = project, mode = "export")
         delta = tileset.tile_size
@@ -115,7 +114,8 @@ class Map:
                 for x, tile in enumerate(line):
                     if tile > 0:
                         canvas.paste(tileset[tile], (x * delta, y * delta), tileset[tile])
-        canvas.save(os.path.join(self.path, f"{self.name}.png"))
+
+        canvas.save(path)
 
     def clear_layer(self, layer: int):
         index = layer - 1
@@ -127,7 +127,7 @@ class Map:
     def place_tile(
         self,
         tile: int,
-        pos: Vector,
+        pos: Vec,
         layer: int,
         movement_layer: bool = False
     ):
@@ -144,8 +144,8 @@ class Map:
     def fill_area(
         self,
         tile: int,
-        start: Vector,
-        end: Vector,
+        start: Vec,
+        end: Vec,
         layer: int,
         movement_layer: bool = False
     ):
@@ -163,7 +163,7 @@ class Map:
             for x, _ in enumerate(line[x0:x1]):
                 line[x + x0] = tile
     
-    def flood_fill(self, tile: int, point: Vector, layer: int, movement_layer: bool = False):
+    def flood_fill(self, tile: int, point: Vec, layer: int, movement_layer: bool = False):
         # usa o algoritmo "scanline fill"
         if min(point) < 0: return
         mp = self.movement if movement_layer else self.layers[layer - 1]
@@ -186,7 +186,7 @@ class Map:
                 if y > 0: stack.append((x, y - 1))
                 if y < ymax: stack.append((x, y + 1))
     
-    def get_tile(self, pos: Vector, z: int) -> int:
+    def get_tile(self, pos: Vec, z: int) -> int:
         x, y = pos
         if min(pos) < 0:
             return 0
@@ -194,7 +194,7 @@ class Map:
             return 0
         return self.layers[z - 1][y][x]
     
-    def resize(self, value: Vector, *, op: Literal["=", "+", "-"] = "="):
+    def resize(self, value: Vec, *, op: Literal["=", "+", "-"] = "="):
         w, h = size = self.size
         if op == "=":
             new_size = value

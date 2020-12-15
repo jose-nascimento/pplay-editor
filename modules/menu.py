@@ -1,6 +1,7 @@
 from os import path
 from typing import List, Optional, Tuple
 import pygame
+from tkinter.filedialog import asksaveasfile, asksaveasfilename
 import pygame_menu
 import os
 from PPlayMaps import Map, config as conf
@@ -86,6 +87,7 @@ class Menu(pygame_menu.Menu):
         if canvas is not None:
             self.add_button("Editar Mapa", self.map_edit_menu)
         self.add_button("Novo Mapa", map_creation_menu)
+        self.add_button("Exportar como imagem", self.ask_save)
         self.add_button("Sair", pygame_menu.events.EXIT)
 
         save_prompt.add_label("Salvar alterações?", align = pygame_menu.locals.ALIGN_LEFT)
@@ -94,6 +96,12 @@ class Menu(pygame_menu.Menu):
         save_prompt.add_vertical_margin(50)
         save_prompt.add_vertical_margin(50)
         save_prompt.add_button("Não ", self.close_prompt, align = pygame_menu.locals.ALIGN_RIGHT)
+
+    def ask_save(self):
+        filename = asksaveasfilename(defaultextension = ".png", filetypes = [("Imagem", ".png")])
+
+        if filename:
+            self.canvas.export_image(filename)
 
     def post_save_event(self):
         event = pygame.event.Event(events.SAVE_CHANGES)

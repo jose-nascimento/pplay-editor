@@ -1,14 +1,15 @@
 from typing import Literal, Optional, Tuple, Union
 import pygame
-from PPlayMaps import Tileset, Vector
+from PPlayMaps import Tileset
+from PPlayMaps.types import Vector, Vec
 
 class TileBar:
 
     def calc_size(
         self,
-        position: Vector,
-        screen_size: Vector,
-        screen_tile_size: Vector
+        position: Vec,
+        screen_size: Vec,
+        screen_tile_size: Vec
     ) -> Tuple[int, int]:
         sw, sh = screen_size
         tx, ty = screen_tile_size
@@ -23,10 +24,10 @@ class TileBar:
         self.length = length
         self.margin = margin
 
-        self.screen_size = screen_size
-        self.screen_tile_size = screen_tile_size
+        self.screen_size = Vector(*screen_size)
+        self.screen_tile_size = Vector(*screen_tile_size)
         self.width = ty
-        self.position = position
+        self.position = Vector(*position)
 
         return height, length
 
@@ -131,9 +132,9 @@ class TileBar:
 
     def on_resize(
         self,
-        position: Optional[Vector] = None,
-        screen_size: Optional[Vector] = None,
-        screen_tile_size: Optional[Vector] = None
+        position: Optional[Vec] = None,
+        screen_size: Optional[Vec] = None,
+        screen_tile_size: Optional[Vec] = None
     ):
         if position is None: position = self.position
         if screen_size is None: screen_size = self.screen_size

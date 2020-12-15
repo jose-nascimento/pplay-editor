@@ -2,17 +2,18 @@ from typing import Literal, Tuple, Optional, Union
 from pygame import image
 from pygame.locals import *
 import pygame
-from PPlayMaps import Map, Tileset, Vector
+from PPlayMaps import Map, Tileset
+from PPlayMaps.types import Vector, Vec
 from .helpers import clamp_2, add_v
 
 class Scenario:
 
     def calc_size(
         self,
-        size: Vector,
-        screen_size: Vector,
-        tile_size: Optional[Vector] = None,
-        position: Optional[Vector] = None,
+        size: Vec,
+        screen_size: Vec,
+        tile_size: Optional[Vec] = None,
+        position: Optional[Vec] = None,
         *,
         limit_margin: bool = False
     ) -> Tuple[Vector, Vector, Vector]:
@@ -24,10 +25,12 @@ class Scenario:
             if limit_margin:
                 min_tile = min(tile_size)
                 tile_size = Vector(min_tile, min_tile)
+        else:
+            tile_size = Vector(*tile_size)
         
         tx, ty = tile_size
-        display_size = (vw, vh) = (width * tx, height * ty)
-        margin = ((sw - vw) // 2, (sh - vh) // 2)
+        (vw, vh) = display_size = Vector(width * tx, height * ty)
+        margin = Vector((sw - vw) // 2, (sh - vh) // 2)
 
         if limit_margin is None:
             limit_margin = self.limit_margin
@@ -40,16 +43,16 @@ class Scenario:
         self.screen_tile_size = tile_size
         self.display_size = display_size
         self.screen_size = screen_size
-        if position is not None: self.position = position
+        if position is not None: self.position = Vector(*position)
 
         return display_size, margin, tile_size
 
     def __init__(
         self,
-        position: Vector,
-        size: Vector,
-        screen_size: Vector,
-        tile_size: Optional[Vector] = None,
+        position: Vec,
+        size: Vec,
+        screen_size: Vec,
+        tile_size: Optional[Vec] = None,
         *,
         fill_color: Color = (192, 192, 192),
         limit_margin: bool = False
@@ -77,9 +80,9 @@ class Scenario:
 
     def on_resize(
         self,
-        position: Optional[Vector] = None,
-        screen_size: Optional[Vector] = None,
-        tile_size: Optional[Vector] = None
+        position: Optional[Vec] = None,
+        screen_size: Optional[Vec] = None,
+        tile_size: Optional[Vec] = None
     ) -> None:
         if position is None: position = self.position
         if screen_size is None: screen_size = self.screen_size
@@ -100,9 +103,9 @@ class Scenario:
         map = self.map
         map_w, map_h = map.width, map.height
         display_w, display_h = self.width, self.height
-        return min(map_w, display_w), min(map_h, display_h)
+        return Vector(min(map_w, display_w), min(map_h, display_h))
 
-    def calc_map_display(self) -> Vector:
+    def calc_map_display(self):
         sx, sy = self.screen_tile_size
         map_tile_size = self.map_tile_size
         factor = (sx / map_tile_size, sy / map_tile_size)
@@ -159,32 +162,38 @@ class Scenario:
 
     # ------------ Map manipulation ------------
 
+    def get_map_params(self) -> dict:
+        return self.map.get_params()
+
+    def export_image(self, path: str):
+        self.map.export_image(path)
+
     def clear_layer(self, layer: int):
         self.map.clear_layer(layer)
 
     def clear_movement(self):
         self.map.clear_movement()
 
-    def place_tile(self, tile: int, pos: Vector, layer: int, movement_layer: bool = False):
+    def place_tile(self, tile: int, pos: Vec, layer: int, movement_layer: bool = False):
         self.map.place_tile(tile, pos, layer, movement_layer = movement_layer)
 
     def fill_area(
         self,
         tile: int,
-        start: Vector,
-        end: Vector,
+        start: Vec,
+        end: Vec,
         layer: int,
         movement_layer: bool = False
     ):
         self.map.fill_area(tile, start, end, layer, movement_layer = movement_layer)
     
-    def flood_fill(self, tile: int, point: Vector, layer: int, movement_layer: bool = False):
+    def flood_fill(self, tile: int, point: Vec, layer: int, movement_layer: bool = False):
         self.map.flood_fill(tile, point, layer, movement_layer = movement_layer)
 
-    def get_tile(self, pos: Vector, layer: int) -> int:
+    def get_tile(self, pos: Vec, layer: int) -> int:
         return self.map.get_tile(pos, layer)
 
-    def resize(self, value: Vector, *, op: Literal["=", "+", "-"] = "="):
+    def resize(self, value: Vec, *, op: Literal["=", "+", "-"] = "="):
         return self.map.resize(value, op = op)
 
     def set_bgcolor(self, color: Color = (0, 0, 0)):
@@ -211,12 +220,9 @@ class Scenario:
 
         return tileset
 
-    def get_map_params(self) -> dict:
-        return self.map.get_params()
-
     # ---------- End map manipulation ----------
 
-    def scroll(self, delta: Union[Vector, int], dy: Optional[int] = None):
+    def scroll(self, delta: Union[Vec, int], dy: Optional[int] = None) -> Vector:
         if type(delta) == int:
             if dy is not None:
                 delta = Vector(delta, dy)

@@ -2,7 +2,8 @@ import os
 import configparser
 from typing import Optional
 from zipfile import ZipFile, ZIP_DEFLATED
-from PPlayMaps import Color, config as conf
+from PPlayMaps import config as conf
+from PPlayMaps.types import Color
 config = conf.config
 
 def list_projects():

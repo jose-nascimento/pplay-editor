@@ -2,42 +2,14 @@ import os, sys
 from typing import Tuple, Optional
 from pygame.locals import *
 import pygame
-from pygame_menu import events
-from PPlayMaps import Map, Tileset, Margin, Color, Vector, config as conf
-from modules import Canvas, TileBar, Menu, events as editor_events, utils
+import tkinter
+from PPlayMaps import Map, Tileset, config as conf
+from PPlayMaps.types import Margin, Color, Vector, Vec
+from modules import Canvas, TileBar, Menu, Label, events as editor_events, utils
 config = conf.config
 active = config["active"]
-class Label:
-    def __init__(
-        self,
-        text: str,
-        position: Vector,
-        font_family: str = "Arial",
-        font_size: int = 14,
-        color: Color = (255, 255, 255)
-    ):
-        self.font = font = pygame.font.SysFont(font_family, font_size)
 
-        self.position = position
-        self.color = color
-
-        self.surface = font.render(text, 1, color)
-        self.surface.fill((0,0,0))
-    
-    def set_position(self, position: Vector):
-        self.position = position
-
-    def set(self, text, color: Optional[Color] = None):
-        if color is None:
-            color = self.color
-        else:
-            self.color = color
-        self.surface = self.font.render(text, 1, color)
-    
-    def blit(self, screen) -> None:
-        screen.blit(self.surface, self.position)
-
-def get_positions(margin: Margin):
+def get_positions(margin: Margin) -> Tuple[Vector, Vector]:
     tilebar_position = Vector(0, margin.top)
     label_position = Vector(margin.left, 2)
 
@@ -76,9 +48,9 @@ def load_project(name: str, canvas: Canvas, tile_bar: TileBar) -> Tuple[Map, Til
 
 def init_assets(
     canvas: Canvas,
-    tile_size: Vector,
+    tile_size: Vec,
     margin: Margin,
-    screen_size: Vector,
+    screen_size: Vec,
     project: Optional[str] = None,
     map_name: Optional[str] = None
 ) -> Tuple[Map, Tileset, TileBar, Label]:
@@ -130,6 +102,9 @@ def compute_dimensions() -> Tuple[Vector, Vector, Vector, Vector, Vector, Margin
 sizer_xy = None
 def init_display() -> Tuple[Canvas, pygame.Surface, Vector, Vector, Margin]:
     global sizer_xy
+
+    tk_root = tkinter.Tk()
+    tk_root.withdraw()
 
     pygame.init()
     sizer_xy = pygame.cursors.compile(pygame.cursors.sizer_xy_strings)
@@ -207,7 +182,7 @@ def main():
     pygame.init()
     canvas, screen, current_size, screen_tile_size, margin = init_display()
     map, tileset, tile_bar, menu_label = init_assets(canvas, screen_tile_size, margin, current_size)
-    menu = Menu(height = 400, width = 400, title = "Menu Principal", canvas = canvas)
+    menu = Menu(height = 500, width = 400, title = "Menu Principal", canvas = canvas)
     menu.disable()
 
     d = tileset.tile_size # delta

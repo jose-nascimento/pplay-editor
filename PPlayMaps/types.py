@@ -1,4 +1,4 @@
-from typing import Tuple, NamedTuple
+from typing import Tuple, NamedTuple, Union
 
 class Margin(NamedTuple):
     top: int
@@ -9,5 +9,7 @@ class Margin(NamedTuple):
 class Vector(NamedTuple):
     x: int
     y: int
+
+Vec = Union[Tuple[int, int], Vector]
 
 Color = Tuple[int, int, int]
