@@ -12,8 +12,9 @@ Editar movimento: [M]
 Esconder layer atual: [H]
 Mostrar apenas layer atual: [T]
 Trocar tile atual: setas do teclado [cima]/[baixo] ou clicar no tile
+Copiar tile: [C], com mouse sobre este
 Mover mapa: scroll cima/baixo, setas do teclado [<-]/[->]
-Mover barra de tileset: scroll, com mouse em cima dela
+Mover barra de tileset: scroll, com mouse sobre esta
 Posicionar tile: botão esquerdo do mouse
 Limpar tile: botão direito do mouse
 Trocar modo de preenchimento: Teclas [L], [A], [B]

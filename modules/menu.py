@@ -273,11 +273,15 @@ class Menu(pygame_menu.Menu):
             align = pygame_menu.locals.ALIGN_LEFT
         ).set_font(**font_config)
         menu.add_label(
+            "Copiar tile: [C], com mouse sobre este",
+            align = pygame_menu.locals.ALIGN_LEFT
+        ).set_font(**font_config)
+        menu.add_label(
             "Mover mapa: scroll cima/baixo, setas do teclado [<-]/[->]",
             align = pygame_menu.locals.ALIGN_LEFT
         ).set_font(**font_config)
         menu.add_label(
-            "Mover barra de tileset: scroll, com mouse em cima dela",
+            "Mover barra de tileset: scroll, com mouse sobre esta",
             align = pygame_menu.locals.ALIGN_LEFT
         ).set_font(**font_config)
         menu.add_label(
