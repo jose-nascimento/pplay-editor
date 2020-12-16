@@ -32,7 +32,7 @@ class Map:
         if background is None: background = {}
         self.background = background
         tileset = tileset
-        bgcolor = background["background_color"] if "background_color" in background else (0, 0, 0)
+        bgcolor = background["background_color"] if "background_color" in background else None
         self.bgcolor = (bgcolor[0], bgcolor[1], bgcolor[2])
         self.bgimage = bgimage
         self.tileset = tileset
@@ -105,7 +105,8 @@ class Map:
         tileset = Tileset.load(name = tileset_name, project = project, mode = "export")
         delta = tileset.tile_size
         map_size = (self.width * delta, self.height * delta)
-        canvas = Image.new("RGBA", map_size, self.bgcolor)
+        color = self.bgcolor or (255, 0, 0, 0)
+        canvas = Image.new("RGBA", map_size, color)
         if "image" in self.background:
             bgimage = Image.open(os.path.join(self.path, self.background["image"]))
             canvas.paste(bgimage, (0, 0), bgimage)

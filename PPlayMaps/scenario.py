@@ -318,6 +318,7 @@ class Scenario:
     
     def draw_map(self):
         show_layers = self.show_layers
+        map = self.map
 
         sx, sy = self.curr_scroll
         w, h = self.width, self.height
@@ -326,11 +327,11 @@ class Scenario:
         xmax, ymax = (w * tile_size) + sx, (h * tile_size) + sy
         area = (xmin, ymin, xmax, ymax)
 
-        self.display.fill(self.map.bgcolor)
+        if map.bgcolor: self.display.fill(map.bgcolor)
         if self.bgimage_override:
             self.display.blit(self.bgimage_override, (0, 0), area = area)
-        elif self.map.bgimage:
-            self.display.blit(self.map.bgimage, (0, 0), area = area)
+        elif map.bgimage:
+            self.display.blit(map.bgimage, (0, 0), area = area)
 
         if self.tileset:
             if show_layers & 0b0001:
