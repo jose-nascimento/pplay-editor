@@ -234,5 +234,5 @@ class Map:
             ]
 
     def init_layer(self) -> List[List[int]]:
-        w, h = self.height, self.width
+        w, h = self.width, self.height
         return [[0] * w for _ in range(h)]

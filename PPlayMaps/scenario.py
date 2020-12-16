@@ -132,12 +132,16 @@ class Scenario:
 
         return dimensions
 
-    def set_map(self, map: Map, tileset: Tileset):
+    def set_map(self, map: Map, tileset: Optional[Tileset] = None):
         self.map = map
         self.tileset = tileset
 
         self.show_layers = 0b1111
-        self.map_tile_size = tileset.tile_size
+        if tileset:
+            self.map_tile_size = tileset.tile_size
+        else:
+            self.map_tile_size = self.screen_tile_size[0]
+            
         self.curr_scroll = Vector(0, 0)
 
         dimensions = self.calc_map_size()
@@ -328,11 +332,12 @@ class Scenario:
         elif self.map.bgimage:
             self.display.blit(self.map.bgimage, (0, 0), area = area)
 
-        if show_layers & 0b0001:
-            self.blit_tiles(1)
-        if show_layers & 0b0010:
-            self.blit_tiles(2)
-        if show_layers & 0b0100:
-            self.blit_tiles(3)
-        if show_layers & 0b1000:
-            self.blit_tiles(4)
+        if self.tileset:
+            if show_layers & 0b0001:
+                self.blit_tiles(1)
+            if show_layers & 0b0010:
+                self.blit_tiles(2)
+            if show_layers & 0b0100:
+                self.blit_tiles(3)
+            if show_layers & 0b1000:
+                self.blit_tiles(4)

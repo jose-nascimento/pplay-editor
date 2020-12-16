@@ -27,6 +27,10 @@ class Canvas(Scenario):
             **kwargs
         )
         self.scroll_width = scroll_width
+        self.has_scrollbar = False
+
+        self.scroll_bar_y = None
+        self.scroll_bar_x = None
 
     def set_scrollbar(self):
         sw, sh = self.screen_size
@@ -35,6 +39,7 @@ class Canvas(Scenario):
         mw, mh = self.get_map_size()
         scroll_width = self.scroll_width
 
+        self.has_scrollbar = True
         scroll_y_position = Vector(sw - scroll_width, 0)
         scroll_x_position = Vector(0, sh - scroll_width)
 
@@ -65,10 +70,11 @@ class Canvas(Scenario):
 
     def scroll(self, delta: Union[Vec, int], dy: Optional[int] = None) -> Vector:
         super().scroll(delta, dy)
-
-        x, y = self.curr_scroll
-        self.scroll_bar_y.update(y)
-        self.scroll_bar_x.update(x)
+        
+        if self.has_scrollbar:
+            x, y = self.curr_scroll
+            self.scroll_bar_y.update(y)
+            self.scroll_bar_x.update(x)
 
     # =========== Mostra tile atual na posição do mouse ===========
     def pointer_tile(self, tile):
@@ -102,7 +108,9 @@ class Canvas(Scenario):
 
     def draw(self, screen: pygame.Surface):
         display_size = self.map_size or self.display_size
+        bar_x, bar_y = self.scroll_bar_x, self.scroll_bar_y
+
         self.screen.blit(pygame.transform.scale(self.display, display_size), self.margin)
-        self.scroll_bar_y.draw(self.screen)
-        self.scroll_bar_x.draw(self.screen)
+        if bar_y: bar_y.draw(self.screen)
+        if bar_x: bar_x.draw(self.screen)
         screen.blit(self.screen, self.position)
