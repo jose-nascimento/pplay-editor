@@ -26,7 +26,7 @@ class Scenario:
             self.limit_margin = limit_margin
 
         if tile_size == None:
-            tile_size = (sw // width, sh // height)
+            tile_size = Vector(sw // width, sh // height)
             if limit_margin:
                 min_tile = min(tile_size)
                 tile_size = Vector(min_tile, min_tile)

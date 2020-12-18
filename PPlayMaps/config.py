@@ -4,6 +4,8 @@ config = configparser.ConfigParser()
 
 if "config.ini" in os.listdir():
     config.read("config.ini")
+else:
+    config.add_section("active")
 
 project_folder = config["active"].get("project_folder", None)
 
