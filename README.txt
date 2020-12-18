@@ -1,12 +1,15 @@
 Necessita de Python >= 3.6
 
-Inicialização:
+Instalação / Inicialização:
 
+git clone https://github.com/jose-nascimento/pplay-editor.git
+cd pplay-editor
 pip install -r requirements.txt
 python editor.py
 
 Uso:
 Menu principal: [ESC]
+Salvar alterações no mapa: Ctrl+S
 Trocar layer: teclas [1] - [4]
 Editar movimento: [M]
 Esconder layer atual: [H]
