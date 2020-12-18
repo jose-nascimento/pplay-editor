@@ -236,7 +236,7 @@ class Menu(pygame_menu.Menu):
 
     def help_menu(self, height: int, width: int):
         menu = pygame_menu.Menu(
-            700, 800, "Ajuda", center_content = False
+            750, 800, "Ajuda", center_content = False
         )
         
         first_label = menu.add_label(
@@ -252,6 +252,10 @@ class Menu(pygame_menu.Menu):
             "background_color": None
         }
         first_label.set_font(**font_config)
+        menu.add_label(
+            "Salvar alterações no mapa: Ctrl+S",
+            align = pygame_menu.locals.ALIGN_LEFT
+        ).set_font(**font_config)
         menu.add_label(
             "Trocar layer: teclas [1] - [4]",
             align = pygame_menu.locals.ALIGN_LEFT
