@@ -1,7 +1,6 @@
-import pygame
 from PPlayMaps.helpers import add_v
 from typing import Optional, Tuple
-from PPlayMaps import Scenario, helpers
+from PPlayMaps import Scenario
 from PPlayMaps.types import Vector, Vec, ArrowType
 from PPlay.window import Window
 from PPlay.sprite import Sprite
@@ -72,8 +71,9 @@ class GameScenario(Scenario):
         x, y = position
         return self.map.layers[layer - 1][y][x]
 
-    def hero_can_move(self, movement: ArrowType):
+    def hero_can_move(self, movement: ArrowType) -> bool:
         hx, hy = self.hero_position
+        width, height = self.get_map_size()
         if movement == "up":
             hy -= 1
         elif movement == "down":
@@ -82,16 +82,26 @@ class GameScenario(Scenario):
             hx -= 1
         elif movement == "right":
             hx += 1
-        return self.map.movement[hy][hx] == 0
+        if (0 <= hx < width) and (0 <= hy < height):
+            return self.map.movement[hy][hx] == 0
+        else:
+            return False
 
     def can_move_to(self, position: Vec) -> bool:
         x, y = position
-        return self.map.movement[y][x] == 0
+        width, height = self.get_map_size()
+        if (0 <= x < width) and (0 <= y < height):
+            return self.map.movement[y][x] == 0
+        else:
+            return False
 
     def move_hero_to(self, position: Vec):
-        self.hero_position = Vector(*position)
-        x, y = self.get_hero_screen_position()
-        self.hero.set_position(x, y)
+        x, y = position
+        width, height = self.get_map_size()
+        if (0 <= x < width) and (0 <= y < height):
+            self.hero_position = Vector(*position)
+            sx, sy = self.get_hero_screen_position()
+            self.hero.set_position(sx, sy)
 
     def move_hero(self, movement: ArrowType) -> bool:
         if self.hero_can_move(movement):

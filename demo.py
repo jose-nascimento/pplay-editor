@@ -47,7 +47,6 @@ while(loop):
     if keyboard.key_pressed("P"):
         paused = victory or not paused
         pygame.time.wait(200)
-    
 
     if not paused:
         if (frame % (fps // max_speed)) == 0:
