@@ -1,7 +1,7 @@
-from PPlayMaps.helpers import add_v
 from typing import Optional, Tuple
 from PPlayMaps import Scenario
 from PPlayMaps.types import Vector, Vec, ArrowType
+from PPlayMaps.helpers import sub_v
 from PPlay.window import Window
 from PPlay.sprite import Sprite
 from PPlay.gameimage import GameImage
@@ -39,11 +39,13 @@ class GameScenario(Scenario):
         return Vector(x * tile_size, y * tile_size)
 
     def get_screen_position(self, x: int, y: int) -> Vector:
+        scroll_x, scroll_y = self.curr_scroll
+        cx, cy = x - scroll_x, y - scroll_y
         sx, sy = self.screen_tile_size
         px, py = self.position
         mx, my = self.margin
         dx, dy = px + mx, py + my
-        return Vector(x * sx + dx, y * sy + dy)
+        return Vector(cx * sx + dx, cy * sy + dy)
 
     def get_hero_screen_position(self) -> Vector:
         return self.get_screen_position(*self.hero_position)
@@ -99,9 +101,39 @@ class GameScenario(Scenario):
         x, y = position
         width, height = self.get_map_size()
         if (0 <= x < width) and (0 <= y < height):
+            p0 = self.hero_position
+
             self.hero_position = Vector(*position)
-            sx, sy = self.get_hero_screen_position()
-            self.hero.set_position(sx, sy)
+
+            mx, my = self.max_scroll
+            if max(mx, my) > 0:
+                sx, sy = self.curr_scroll
+                width, height = self.size
+                map_width, map_height = self.get_map_size()
+                half_w, half_h = width // 2, height // 2
+                rw, rh = width % 2, height % 2
+                dx, dy = sub_v(p0, position)
+                to_x, to_y = 0, 0
+
+                if dx > 0 and sx > 0 and (map_width - x) > half_w:
+                    # indo para a esquerda, posição atual está a > meia tela da borda direita
+                    to_x = -dx
+                elif dx < 0 and sx <= mx and x > half_w + rw:
+                    # indo para a direita, posição atual está a > meia tela da borda esquerda
+                    to_x = -dx
+
+                if dy > 0 and sy > 0 and (map_height - y) > half_h:
+                    # subindo, posição atual está a > meia tela do fundo
+                    to_y = -dy
+                elif dy < 0 and sy <= my and y > half_h + rh:
+                    # descendo, posição atual está a > meia tela do topo
+                    to_y = -dy
+
+                self.scroll((to_x, to_y))
+            
+            hx, hy = self.get_hero_screen_position()
+            self.hero.set_position(hx, hy)
+
 
     def move_hero(self, movement: ArrowType) -> bool:
         if self.hero_can_move(movement):

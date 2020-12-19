@@ -1,5 +1,4 @@
 from os.path import join
-import datetime
 import pygame
 from PPlay.window import Window
 from PPlay.sprite import Sprite
