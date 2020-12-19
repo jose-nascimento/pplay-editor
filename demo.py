@@ -1,10 +1,11 @@
+from PPlayMaps.types import MovementKeys
 from os.path import join
 import pygame
 from PPlay.window import Window
 from PPlay.sprite import Sprite
 from PPlayMaps import GameScenario
 
-def convert_time(seconds: int):
+def convert_time(seconds: int) -> str:
     ss = seconds % 60
     mm = (seconds // 60) % 60
     # hh = (ms / (1000 * 60 * 60)) % 24
@@ -19,6 +20,7 @@ scenario = GameScenario((0, 0), (30, 16), (960, 512))
 scenario.load_map("map00")
 font = pygame.font.SysFont("Arial", 30)
 victory_font = pygame.font.SysFont("Arial", 48)
+keys = MovementKeys("w", "s", "a", "d")
 
 hero = Sprite(join("res", "pacman-sprite.png"), 3)
 hero.set_total_duration(900)
@@ -32,7 +34,7 @@ moved_x, moved_y = False, False
 score = 0
 paused = False
 victory = False
-pause_text = font.render("Jogo Pausado", True, (255, 255, 255))
+pause_text = victory_font.render("Jogo Pausado", True, (255, 255, 255))
 victory_text = None
 subtext = None
 
@@ -52,11 +54,11 @@ while(loop):
             moved_x, moved_y = False, False 
 
         if not (moved_x or moved_y):
-            moved_x, moved_y = scenario.move_hero_keys()
+            moved_x, moved_y = scenario.move_hero_keys(keys)
         elif not moved_x:
-            scenario.move_hero_key_x()
+            scenario.move_hero_key_x(keys)
         elif not moved_y:
-            scenario.move_hero_key_y()
+            scenario.move_hero_key_y(keys)
 
         if layer := scenario.stepping_on(76):
             position = scenario.hero_position

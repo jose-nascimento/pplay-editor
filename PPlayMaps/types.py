@@ -22,6 +22,20 @@ class Vector(NamedTuple):
     x: int
     y: int
 
+class MovementKeys(NamedTuple):
+    up: str
+    down: str
+    left: str
+    right: str
+
+class MovementKeysUD(NamedTuple):
+    up: str
+    down: str
+
+class MovementKeysLR(NamedTuple):
+    left: str
+    right: str
+
 Vec = Union[Tuple[int, int], Vector]
 
 Color = Tuple[int, int, int]
