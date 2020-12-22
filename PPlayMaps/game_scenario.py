@@ -1,8 +1,8 @@
 import pygame
 from PPlayMaps.helpers import add_v
-from typing import Literal, Optional, Tuple
+from typing import Optional, Tuple
 from PPlayMaps import Scenario, helpers
-from PPlayMaps.types import Vector, Vec, Color
+from PPlayMaps.types import Vector, Vec, ArrowType
 from PPlay.window import Window
 from PPlay.sprite import Sprite
 from PPlay.gameimage import GameImage
@@ -72,7 +72,7 @@ class GameScenario(Scenario):
         x, y = position
         return self.map.layers[layer - 1][y][x]
 
-    def hero_can_move(self, movement: Literal["up", "down", "left", "right"]):
+    def hero_can_move(self, movement: ArrowType):
         hx, hy = self.hero_position
         if movement == "up":
             hy -= 1
@@ -93,7 +93,7 @@ class GameScenario(Scenario):
         x, y = self.get_hero_screen_position()
         self.hero.set_position(x, y)
 
-    def move_hero(self, movement: Literal["up", "down", "left", "right"]) -> bool:
+    def move_hero(self, movement: ArrowType) -> bool:
         if self.hero_can_move(movement):
             hx, hy = self.hero_position
             if movement == "up":
@@ -108,7 +108,7 @@ class GameScenario(Scenario):
             return True
         return False
 
-    def move_hero_ignore_terrain(self, movement: Literal["up", "down", "left", "right"]):
+    def move_hero_ignore_terrain(self, movement: ArrowType):
         hx, hy = self.hero_position
         if movement == "up":
             hy -= 1

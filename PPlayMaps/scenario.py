@@ -1,9 +1,9 @@
-from typing import Literal, Tuple, Optional, Union
+from typing import Tuple, Optional, Union
 from pygame import image
 from pygame.locals import *
 import pygame
 from PPlayMaps import Map, Tileset
-from PPlayMaps.types import Vector, Vec
+from PPlayMaps.types import Vector, Vec, OpType
 from .helpers import clamp_2, add_v
 
 class Scenario:
@@ -200,7 +200,7 @@ class Scenario:
     def get_tile(self, pos: Vec, layer: int) -> int:
         return self.map.get_tile(pos, layer)
 
-    def resize(self, value: Vec, *, op: Literal["=", "+", "-"] = "="):
+    def resize(self, value: Vec, *, op: OpType = "="):
         return self.map.resize(value, op = op)
 
     def set_bgcolor(self, color: Color = (0, 0, 0)):

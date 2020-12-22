@@ -1,11 +1,11 @@
-from typing import List, Literal, Optional
+from typing import List, Optional
 from pygame.locals import Color
 import json
 import os
 from PIL import Image
 import pygame
 from PPlayMaps import Tileset, config as conf
-from PPlayMaps.types import Vector, Vec
+from PPlayMaps.types import Vector, Vec, OpType
 from .helpers import add_v, clamp, sub_v
 config = conf.config
 active = config["active"]
@@ -196,7 +196,7 @@ class Map:
             return 0
         return self.layers[z - 1][y][x]
     
-    def resize(self, value: Vec, *, op: Literal["=", "+", "-"] = "="):
+    def resize(self, value: Vec, *, op: OpType = "="):
         w, h = size = self.size
         if op == "=":
             new_size = value
