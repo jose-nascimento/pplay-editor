@@ -2,7 +2,11 @@ import os, sys
 from typing import Tuple, Optional
 from pygame.locals import *
 import pygame
-import tkinter
+try:
+    import tkinter
+    has_tk = True
+except:
+    has_tk = False
 from PPlayMaps import Map, Tileset, config as conf
 from PPlayMaps.types import Margin, Vector, Vec
 from modules import Canvas, TileBar, Menu, Label, events as editor_events, utils
@@ -116,8 +120,9 @@ sizer_xy = None
 def init_display() -> Tuple[Canvas, pygame.Surface, Vector, Vector, Margin]:
     global sizer_xy
 
-    tk_root = tkinter.Tk()
-    tk_root.withdraw()
+    if has_tk:
+        tk_root = tkinter.Tk()
+        tk_root.withdraw()
 
     pygame.init()
     sizer_xy = pygame.cursors.compile(pygame.cursors.sizer_xy_strings)

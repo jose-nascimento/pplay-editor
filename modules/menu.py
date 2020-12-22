@@ -1,6 +1,10 @@
 from typing import List, Optional, Tuple
 import pygame
-from tkinter.filedialog import asksaveasfilename, askopenfilename
+try:
+    from tkinter.filedialog import asksaveasfilename, askopenfilename
+    has_tk = True
+except:
+    has_tk = False
 import pygame_menu
 from pygame_menu.widgets import TextInput
 import os
@@ -112,12 +116,14 @@ class Menu(pygame_menu.Menu):
         ).set_margin(-30, 0)
 
     def ask_save(self):
-        filename = asksaveasfilename(defaultextension = ".png", filetypes = [("Imagem", ".png")])
-
-        if filename:
-            self.canvas.export_image(filename)
+        if has_tk:
+            filename = asksaveasfilename(defaultextension = ".png", filetypes = [("Imagem", ".png")])
+            if filename:
+                self.canvas.export_image(filename)
 
     def export_project_fn(self):
+        if not has_tk:
+            return
         filepath = asksaveasfilename(
             defaultextension = ".zip",
             filetypes = [("Arquivo comprimido", ".zip")],
@@ -353,6 +359,8 @@ class Menu(pygame_menu.Menu):
         return menu
 
     def bgimage_dialog(self, path_input: TextInput):
+        if not has_tk:
+            return
         value = path_input.get_value()
         initialfile = value or None
         filepath = askopenfilename(
@@ -382,6 +390,8 @@ class Menu(pygame_menu.Menu):
         self._back()
 
     def tileset_dialog(self, path_input: TextInput, name_input: Optional[TextInput] = None):
+        if not has_tk:
+            return
         value = path_input.get_value()
         initialfile = value or None
         filepath = askopenfilename(
