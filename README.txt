@@ -4,6 +4,16 @@ Instalação / Inicialização:
 
 git clone https://github.com/jose-nascimento/pplay-editor.git
 cd pplay-editor
+
+Linux/Mac:
+pip3 install -r requirements.txt
+python3 editor.py
+
+Windows:
+pip3 install -r requirements.txt
+py editor.py
+
+venv:
 pip install -r requirements.txt
 python editor.py
 
