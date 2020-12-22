@@ -75,7 +75,8 @@ class Map:
         if filename in os.listdir(path):
             with open(os.path.join(path, filename), "r") as json_file:
                 data = json.load(json_file)
-            if image := data["background"].get("image", None):
+            image = data["background"].get("image", None)
+            if image is not None:
                 img_path = os.path.join(path, image)
                 bgimage = pygame.image.load(img_path).convert_alpha()
             else:
