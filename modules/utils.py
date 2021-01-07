@@ -34,7 +34,12 @@ def export_project(name: Optional[str] = None, filepath: Optional[str] = None):
         filepath = path.join(filepath, f"{name}.zip")
     
     project_folder = path.join("projects", name)
-    export_folders = [("PPlayMaps", "."), ("tilesets", [project_folder]), ("maps", [project_folder])]
+    export_folders = [
+        ("PPlay", "."),
+        ("PPlayMaps", "."),
+        ("tilesets", [project_folder]),
+        ("maps", [project_folder])
+    ]
 
     with ZipFile(filepath, "w", ZIP_DEFLATED) as zip_file:
         for folder, param in export_folders:

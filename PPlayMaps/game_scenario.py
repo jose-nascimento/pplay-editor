@@ -1,8 +1,7 @@
-import pygame
-from PPlayMaps.helpers import add_v
-from typing import Optional, Tuple
-from PPlayMaps import Scenario, helpers
-from PPlayMaps.types import Vector, Vec, ArrowType
+from typing import Optional, Tuple, Union
+from PPlayMaps import Scenario
+from PPlayMaps.types import MovementKeys, MovementKeysLR, MovementKeysUD, Vector, Vec, ArrowType
+from PPlayMaps.helpers import sub_v
 from PPlay.window import Window
 from PPlay.sprite import Sprite
 from PPlay.gameimage import GameImage
@@ -40,11 +39,13 @@ class GameScenario(Scenario):
         return Vector(x * tile_size, y * tile_size)
 
     def get_screen_position(self, x: int, y: int) -> Vector:
+        scroll_x, scroll_y = self.curr_scroll
+        cx, cy = x - scroll_x, y - scroll_y
         sx, sy = self.screen_tile_size
         px, py = self.position
         mx, my = self.margin
         dx, dy = px + mx, py + my
-        return Vector(x * sx + dx, y * sy + dy)
+        return Vector(cx * sx + dx, cy * sy + dy)
 
     def get_hero_screen_position(self) -> Vector:
         return self.get_screen_position(*self.hero_position)
@@ -62,18 +63,20 @@ class GameScenario(Scenario):
         self.hero = hero
         self.hero_position = Vector(*position)
 
-    def stepping_on(self, tile: int):
+    def stepping_on(self, tile: int) -> int:
         x, y = self.hero_position
         for i, layer in enumerate(self.map.layers):
             if layer[y][x] == tile:
                 return i + 1
+        return 0
     
-    def tile_at(self, layer: int, position: Vec):
+    def tile_at(self, layer: int, position: Vec) -> int:
         x, y = position
         return self.map.layers[layer - 1][y][x]
 
-    def hero_can_move(self, movement: ArrowType):
+    def hero_can_move(self, movement: ArrowType) -> bool:
         hx, hy = self.hero_position
+        width, height = self.get_map_size()
         if movement == "up":
             hy -= 1
         elif movement == "down":
@@ -82,16 +85,56 @@ class GameScenario(Scenario):
             hx -= 1
         elif movement == "right":
             hx += 1
-        return self.map.movement[hy][hx] == 0
+        if (0 <= hx < width) and (0 <= hy < height):
+            return self.map.movement[hy][hx] == 0
+        else:
+            return False
 
     def can_move_to(self, position: Vec) -> bool:
         x, y = position
-        return self.map.movement[y][x] == 0
+        width, height = self.get_map_size()
+        if (0 <= x < width) and (0 <= y < height):
+            return self.map.movement[y][x] == 0
+        else:
+            return False
 
     def move_hero_to(self, position: Vec):
-        self.hero_position = Vector(*position)
-        x, y = self.get_hero_screen_position()
-        self.hero.set_position(x, y)
+        x, y = position
+        width, height = self.get_map_size()
+        if (0 <= x < width) and (0 <= y < height):
+            p0 = self.hero_position
+
+            self.hero_position = Vector(*position)
+
+            mx, my = self.max_scroll
+            if max(mx, my) > 0:
+                sx, sy = self.curr_scroll
+                width, height = self.size
+                map_width, map_height = self.get_map_size()
+                half_w, half_h = width // 2, height // 2
+                rw, rh = width % 2, height % 2
+                dx, dy = sub_v(p0, position)
+                to_x, to_y = 0, 0
+
+                if dx > 0 and sx > 0 and (map_width - x) > half_w:
+                    # indo para a esquerda, posição atual está a > meia tela da borda direita
+                    to_x = -dx
+                elif dx < 0 and sx <= mx and x > half_w + rw:
+                    # indo para a direita, posição atual está a > meia tela da borda esquerda
+                    to_x = -dx
+
+                if dy > 0 and sy > 0 and (map_height - y) > half_h:
+                    # subindo, posição atual está a > meia tela do fundo
+                    to_y = -dy
+                elif dy < 0 and sy <= my and y > half_h + rh:
+                    # descendo, posição atual está a > meia tela do topo
+                    to_y = -dy
+
+                self.scroll((to_x, to_y))
+            
+            hx, hy = self.get_hero_screen_position()
+            self.hero.set_position(hx, hy)
+
 
     def move_hero(self, movement: ArrowType) -> bool:
         if self.hero_can_move(movement):
@@ -120,20 +163,26 @@ class GameScenario(Scenario):
             hx += 1
         self.move_hero_to((hx, hy))
 
-    def move_hero_keys(self) -> Tuple[bool, bool]:
+    def move_hero_keys(
+            self,
+            keys: Union[MovementKeys, Tuple[str, str, str, str]] = ("up", "down", "left", "right")
+        ) -> Tuple[bool, bool]:
+        if not isinstance(keys, MovementKeys):
+            keys = MovementKeys(*keys)
+        keys = MovementKeys(*keys)
         keyboard = Window.get_keyboard()
         hx, hy = self.hero_position
         h, v = False, False
-        if keyboard.key_pressed("up"):
+        if keyboard.key_pressed(keys.up):
             hy -= 1
             v = not v
-        if(keyboard.key_pressed("down")):
+        if keyboard.key_pressed(keys.down):
             hy += 1
             v = not v
-        if keyboard.key_pressed("left"):
+        if keyboard.key_pressed(keys.left):
             hx -= 1
             h = not h
-        if(keyboard.key_pressed("right")):
+        if keyboard.key_pressed(keys.right):
             hx += 1
             h = not h
         hero_position = Vector(hx, hy)
@@ -143,14 +192,19 @@ class GameScenario(Scenario):
         else:
             return False, False
     
-    def move_hero_key_x(self) -> bool:
+    def move_hero_key_x(
+            self,
+            keys: Union[MovementKeys, MovementKeysLR, Tuple[str, str]] = ("left", "right")
+        ) -> bool:
+        if not isinstance(keys, (MovementKeysLR, MovementKeys)):
+            keys = MovementKeysLR(*keys)
         keyboard = Window.get_keyboard()
         hx, hy = self.hero_position
         moved = False
-        if keyboard.key_pressed("left"):
+        if keyboard.key_pressed(keys.left):
             hx -= 1
             moved = not moved
-        if(keyboard.key_pressed("right")):
+        if keyboard.key_pressed(keys.right):
             hx += 1
             moved = not moved
         hero_position = Vector(hx, hy)
@@ -159,14 +213,19 @@ class GameScenario(Scenario):
             return moved
         return False
 
-    def move_hero_key_y(self) -> bool:
+    def move_hero_key_y(
+            self,
+            keys: Union[MovementKeys, MovementKeysUD, Tuple[str, str]] = ("up", "down")
+        ) -> bool:
+        if not isinstance(keys, (MovementKeysUD, MovementKeys)):
+            keys = MovementKeysUD(*keys)
         keyboard = Window.get_keyboard()
         hx, hy = self.hero_position
         moved = False
-        if keyboard.key_pressed("up"):
+        if keyboard.key_pressed(keys.up):
             hy -= 1
             moved = not moved
-        if(keyboard.key_pressed("down")):
+        if keyboard.key_pressed(keys.down):
             hy += 1
             moved = not moved
         hero_position = Vector(hx, hy)

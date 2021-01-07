@@ -1,4 +1,4 @@
-import os, sys
+import os
 from typing import Tuple, Optional
 from pygame.locals import *
 import pygame
